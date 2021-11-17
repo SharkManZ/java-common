@@ -17,5 +17,5 @@ public class ErrorConstants {
     public static final String EMPTY_ENTITY = "Не передана сущность \"{0}\"";
     public static final String ENTITY_ALREADY_EXISTS = "Сущность \"{0}\" с ключом \"{1}\" уже существует";
     public static final String ENTITY_NOT_FOUND_BY_ID = "Сущность \"{0}\" с идентификатором {1} не найдена";
-
+    public static final String ENTITY_EMPTY_FIELD = "Поле {0} сущности {1} не задано";
 }
