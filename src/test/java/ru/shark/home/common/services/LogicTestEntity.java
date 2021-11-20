@@ -10,6 +10,7 @@ public class LogicTestEntity extends BaseEntity {
     private Integer intField;
     private Long longField;
     private TestEnum testEnum;
+    private LogicTestInnerEntity innerEntity;
 
     public String getName() {
         return name;
@@ -57,6 +58,14 @@ public class LogicTestEntity extends BaseEntity {
 
     public void setTestEnum(TestEnum testEnum) {
         this.testEnum = testEnum;
+    }
+
+    public LogicTestInnerEntity getInnerEntity() {
+        return innerEntity;
+    }
+
+    public void setInnerEntity(LogicTestInnerEntity innerEntity) {
+        this.innerEntity = innerEntity;
     }
 
     @Override

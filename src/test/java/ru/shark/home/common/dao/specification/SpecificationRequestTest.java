@@ -33,7 +33,9 @@ public class SpecificationRequestTest {
                 new RequestFilter("pAtk", FieldType.INTEGER,
                         FilterOperation.EQ.getValue(), "123"),
                 new RequestFilter("type", FieldType.ENUM,
-                        FilterOperation.EQ.getValue(), "BOW")));
+                        FilterOperation.EQ.getValue(), "BOW"),
+                new RequestFilter("innerEntity.id", FieldType.INTEGER,
+                        FilterOperation.EQ.getValue(), "1")));
         specificationRequest = new SpecificationRequest(requestCriteria);
     }
 
