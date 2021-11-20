@@ -9,6 +9,7 @@ import ru.shark.home.common.services.dto.PageRequest;
 
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -36,7 +37,7 @@ public class BaseLogicService {
     }
 
     protected FieldType getFieldType(Class dtoClass, String fieldName) {
-        Field field = ReflectionUtils.findField(dtoClass, fieldName);
+        Field field = findField(dtoClass, fieldName);
 
         if (field.isEnumConstant() || field.getType().isEnum()) {
             return FieldType.ENUM;
@@ -51,5 +52,19 @@ public class BaseLogicService {
             default:
                 throw new IllegalArgumentException(MessageFormat.format(UNSUPPORTED_FILTER_FIELD_TYPE, field.getType().getSimpleName()));
         }
+    }
+
+    protected Field findField(Class<?> clazz, String fieldName) {
+        if (clazz == null) {
+            return null;
+        }
+        Field field = null;
+        String[] split = fieldName.split("\\.");
+        for (String element: split) {
+            field = ReflectionUtils.findField(clazz, element);
+            clazz = Optional.ofNullable(field).map(Field::getType).orElse(null);
+        }
+
+        return field;
     }
 }

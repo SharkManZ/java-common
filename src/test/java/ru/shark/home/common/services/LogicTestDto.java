@@ -10,6 +10,7 @@ public class LogicTestDto extends Dto {
     private Integer intField;
     private Long longField;
     private TestEnum testEnum;
+    private LogicTestInnerDto innerDto;
 
     public String getName() {
         return name;
@@ -65,5 +66,13 @@ public class LogicTestDto extends Dto {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public LogicTestInnerDto getInnerDto() {
+        return innerDto;
+    }
+
+    public void setInnerDto(LogicTestInnerDto innerDto) {
+        this.innerDto = innerDto;
     }
 }

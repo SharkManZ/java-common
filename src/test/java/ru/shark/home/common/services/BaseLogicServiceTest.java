@@ -13,6 +13,7 @@ import ru.shark.home.common.services.dto.PageRequest;
 import ru.shark.home.common.services.dto.Sort;
 import ru.shark.home.common.util.BaseServiceTest;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -89,5 +90,15 @@ public class BaseLogicServiceTest extends BaseServiceTest {
         assertEquals(FieldType.INTEGER, intType);
         assertEquals(FieldType.INTEGER, longType);
         assertEquals(FieldType.ENUM, enumType);
+    }
+
+    @Test
+    public void findField() {
+        // WHEN
+        Field field = baseLogicService.findField(LogicTestDto.class, "innerDto.id");
+
+        // THEN
+        Assertions.assertNotNull(field);
+        Assertions.assertEquals("id", field.getName());
     }
 }
