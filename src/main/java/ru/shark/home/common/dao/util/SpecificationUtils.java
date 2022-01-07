@@ -2,6 +2,7 @@ package ru.shark.home.common.dao.util;
 
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.ObjectUtils;
+import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.entity.BaseEntity;
 
 import javax.persistence.criteria.*;
@@ -24,19 +25,21 @@ public class SpecificationUtils {
         return specCombine;
     }
 
-    public static <T extends BaseEntity> Specification<T> searchSpecification(String value, String... attributes) {
+    public static <T extends BaseEntity> Specification<T> searchSpecification(RequestSearch search, String... attributes) {
         return new Specification<T>() {
             @Override
             public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
                 return new Specification<T>() {
                     @Override
                     public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder criteriaBuilder) {
-                        if (isBlank(value) || ObjectUtils.isEmpty(attributes)) {
+                        if (search == null || isBlank(search.getValue()) || ObjectUtils.isEmpty(attributes)) {
                             return null;
                         }
                         Specification<BaseEntity> combineSpec = null;
                         for (int i = 0; i < attributes.length; i++) {
-                            Specification<BaseEntity> spec = likeAttribute(attributes[i], value);
+                            Specification<BaseEntity> spec = search.isEquals() ?
+                                    equalAttribute(attributes[i], search.getValue()) :
+                                    likeAttribute(attributes[i], search.getValue());
                             if (i == 0) {
                                 combineSpec = Specification.where(spec);
                             } else {
@@ -70,6 +73,31 @@ public class SpecificationUtils {
                         }
 
                         return criteriaBuilder.like(criteriaBuilder.lower(path), "%" + value.toLowerCase() + "%");
+                    }
+                }.toPredicate(root, query, criteriaBuilder);
+            }
+        };
+    }
+
+    public static <T extends BaseEntity> Specification<T> equalAttribute(String attribute, String value) {
+        return new Specification<T>() {
+            @Override
+            public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+                return new Specification<T>() {
+                    @Override
+                    public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+                        if (isBlank(value)) {
+                            return null;
+                        }
+                        Path path = null;
+                        if (attribute.contains(".")) {
+                            String[] attributeChain = attribute.split("\\.");
+                            path = root.get(attributeChain[0]).get(attributeChain[1]);
+                        } else {
+                            path = root.get(attribute);
+                        }
+
+                        return criteriaBuilder.equal(criteriaBuilder.lower(path), value.toLowerCase());
                     }
                 }.toPredicate(root, query, criteriaBuilder);
             }

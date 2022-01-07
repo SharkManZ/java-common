@@ -10,6 +10,7 @@ import ru.shark.home.common.enums.FieldType;
 import ru.shark.home.common.enums.FilterOperation;
 import ru.shark.home.common.services.dto.Filter;
 import ru.shark.home.common.services.dto.PageRequest;
+import ru.shark.home.common.services.dto.Search;
 import ru.shark.home.common.services.dto.Sort;
 import ru.shark.home.common.util.BaseServiceTest;
 
@@ -33,7 +34,7 @@ public class BaseLogicServiceTest extends BaseServiceTest {
         // GIVEN
         PageRequest request = new PageRequest(0, 10);
         request.setFilters(Arrays.asList(new Filter("name", FilterOperation.EQ.getValue(), "A")));
-        request.setSearch("str");
+        request.setSearch(new Search("str"));
         request.setSorts(Arrays.asList(new Sort("name", "ASC"),
                 new Sort("mode", "DESC"),
                 new Sort("type", null)));
@@ -45,7 +46,7 @@ public class BaseLogicServiceTest extends BaseServiceTest {
         assertNotNull(criteria);
         assertEquals(request.getPage(), criteria.getPage());
         assertEquals(request.getSize(), criteria.getSize());
-        assertEquals(request.getSearch(), criteria.getSearch());
+        assertEquals(request.getSearch().getValue(), criteria.getSearch().getValue());
         assertFalse(isEmpty(criteria.getFilters()));
         assertEquals(request.getFilters().size(), criteria.getFilters().size());
         Filter expectedFilter = request.getFilters().get(0);

@@ -6,7 +6,7 @@ public class PageRequest {
     private int page;
     private int size;
     private List<ru.shark.home.common.services.dto.Filter> filters;
-    private String search;
+    private Search search;
     private List<ru.shark.home.common.services.dto.Sort> sorts;
 
     public PageRequest() {
@@ -42,11 +42,11 @@ public class PageRequest {
         this.filters = filters;
     }
 
-    public String getSearch() {
+    public Search getSearch() {
         return search;
     }
 
-    public void setSearch(String search) {
+    public void setSearch(Search search) {
         this.search = search;
     }
 

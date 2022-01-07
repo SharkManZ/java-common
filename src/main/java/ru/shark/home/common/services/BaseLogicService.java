@@ -3,6 +3,7 @@ package ru.shark.home.common.services;
 import org.springframework.util.ReflectionUtils;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestFilter;
+import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.common.RequestSort;
 import ru.shark.home.common.enums.FieldType;
 import ru.shark.home.common.services.dto.PageRequest;
@@ -19,7 +20,9 @@ public class BaseLogicService {
 
     protected RequestCriteria getCriteria(PageRequest request, Class dtoClass) {
         RequestCriteria criteria = new RequestCriteria(request.getPage(), request.getSize());
-        criteria.setSearch(request.getSearch());
+        if (request.getSearch() != null) {
+            criteria.setSearch(new RequestSearch(request.getSearch().getValue(), request.getSearch().isEquals()));
+        }
         if (!isEmpty(request.getFilters())) {
             criteria.setFilters(request.getFilters().stream()
                     .map(item -> new RequestFilter(item.getField(),
@@ -60,7 +63,7 @@ public class BaseLogicService {
         }
         Field field = null;
         String[] split = fieldName.split("\\.");
-        for (String element: split) {
+        for (String element : split) {
             field = ReflectionUtils.findField(clazz, element);
             clazz = Optional.ofNullable(field).map(Field::getType).orElse(null);
         }
