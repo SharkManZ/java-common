@@ -7,6 +7,7 @@ public class RequestCriteria {
     private int size;
     private List<RequestFilter> filters;
     private String search;
+    private boolean searchEquals;
     private List<RequestSort> sorts;
 
     public RequestCriteria(int page, int size) {
@@ -52,5 +53,13 @@ public class RequestCriteria {
 
     public void setSorts(List<RequestSort> sorts) {
         this.sorts = sorts;
+    }
+
+    public boolean isSearchEquals() {
+        return searchEquals;
+    }
+
+    public void setSearchEquals(boolean searchEquals) {
+        this.searchEquals = searchEquals;
     }
 }
