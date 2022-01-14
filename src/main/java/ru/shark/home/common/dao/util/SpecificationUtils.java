@@ -79,14 +79,14 @@ public class SpecificationUtils {
         };
     }
 
-    public static <T extends BaseEntity> Specification<T> equalAttribute(String attribute, String value) {
+    public static <T extends BaseEntity> Specification<T> equalAttribute(String attribute, Object value) {
         return new Specification<T>() {
             @Override
             public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
                 return new Specification<T>() {
                     @Override
                     public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
-                        if (isBlank(value)) {
+                        if (ObjectUtils.isEmpty(value)) {
                             return null;
                         }
                         Path path = null;
@@ -97,7 +97,7 @@ public class SpecificationUtils {
                             path = root.get(attribute);
                         }
 
-                        return criteriaBuilder.equal(criteriaBuilder.lower(path), value.toLowerCase());
+                        return criteriaBuilder.equal(path, value);
                     }
                 }.toPredicate(root, query, criteriaBuilder);
             }
