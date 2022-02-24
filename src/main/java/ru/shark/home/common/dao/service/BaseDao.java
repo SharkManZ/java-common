@@ -2,9 +2,14 @@ package ru.shark.home.common.dao.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.shark.home.common.dao.entity.BaseEntity;
+import ru.shark.home.common.services.dto.Filter;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
+import java.util.List;
+
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.springframework.util.ObjectUtils.isEmpty;
 
 /**
  * Базовый класс для сервисов доступа к данным.
@@ -60,6 +65,22 @@ public abstract class BaseDao<E extends BaseEntity> {
      */
     public Class<E> getEntityClass() {
         return entityClass;
+    }
+
+    /**
+     * Возвращает фильтр из списка по ключу поля
+     *
+     * @param filters коллекция фильтров
+     * @param field   фильтр
+     * @return фильтр или null
+     */
+    protected Filter getFilterValueByField(List<Filter> filters, String field) {
+        if (isEmpty(filters)) {
+            return null;
+        }
+
+        return filters.stream().filter(item -> !isBlank(item.getField()) &&
+                item.getField().equalsIgnoreCase(field)).findFirst().orElse(null);
     }
 
     @Autowired
