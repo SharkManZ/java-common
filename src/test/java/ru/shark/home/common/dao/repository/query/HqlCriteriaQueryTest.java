@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestFilter;
 import ru.shark.home.common.dao.common.RequestSearch;
+import ru.shark.home.common.dao.common.RequestSort;
 import ru.shark.home.common.enums.FieldType;
 
 import java.util.Arrays;
@@ -121,6 +122,55 @@ public class HqlCriteriaQueryTest {
                 "where (lower(s.name) = lower('test') or lower(s.description) = lower('test'))";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
         requestCriteria.setSearch(new RequestSearch("test", true));
+
+        // WHEN
+        ParamsQuery build = query.build(requestCriteria);
+
+        // THEN
+        Assertions.assertNotNull(build);
+        Assertions.assertEquals(expected, build.getQueryString());
+        Assertions.assertEquals(expectedCount, build.getCountQueryString());
+    }
+
+    @Test
+    public void buildWithSelectFromAndOrder() {
+        // GIVEN
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        query.setSelectPart("select s");
+        query.setFromPart("from Entity s");
+        String expected = "select s from Entity s " +
+                "order by s.name asc, s.nameAsc asc, s.nameDesc desc";
+        String expectedCount = "select count(1) from Entity s";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSorts(Arrays.asList(
+                new RequestSort("name", null),
+                new RequestSort("nameAsc", "asc"),
+                new RequestSort("nameDesc", "desc")));
+
+        // WHEN
+        ParamsQuery build = query.build(requestCriteria);
+
+        // THEN
+        Assertions.assertNotNull(build);
+        Assertions.assertEquals(expected, build.getQueryString());
+        Assertions.assertEquals(expectedCount, build.getCountQueryString());
+    }
+
+    @Test
+    public void buildWithSelectFromAndOrderAndDefaultOrder() {
+        // GIVEN
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        query.setSelectPart("select s");
+        query.setFromPart("from Entity s");
+        query.setOrderPart("order by s.id desc");
+        String expected = "select s from Entity s " +
+                "order by s.name asc, s.nameAsc asc, s.nameDesc desc";
+        String expectedCount = "select count(1) from Entity s";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSorts(Arrays.asList(
+                new RequestSort("name", null),
+                new RequestSort("nameAsc", "asc"),
+                new RequestSort("nameDesc", "desc")));
 
         // WHEN
         ParamsQuery build = query.build(requestCriteria);

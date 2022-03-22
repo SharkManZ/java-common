@@ -4,6 +4,7 @@ import org.apache.commons.text.CaseUtils;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestFilter;
 import ru.shark.home.common.dao.common.RequestSearch;
+import ru.shark.home.common.dao.common.RequestSort;
 
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -83,6 +84,19 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
         return filters.stream().map(this::filterToClause).collect(Collectors.joining(" and "));
     }
 
+    private String prepareOrderClause(List<RequestSort> sorts) {
+        if (isEmpty(sorts)) {
+            return null;
+        }
+
+        return sorts.stream().map(this::sortToClause).collect(Collectors.joining(", "));
+    }
+
+    private String sortToClause(RequestSort sort) {
+        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
+        return prefix + sort.getField() + (sort.getDirection() == null ? " asc" : " " + sort.getDirection().name().toLowerCase());
+    }
+
     private String filterToClause(RequestFilter filter) {
         switch (filter.getOperation()) {
             case EQ:
@@ -158,8 +172,13 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     @Override
     public ParamsQuery build(RequestCriteria requestCriteria, Map<String, Object> params) {
         String baseQuery = getBaseQuery(requestCriteria);
-        return new ParamsQuery(selectPart.trim() + " " + baseQuery +
-                (isBlank(orderPart) ? "" : " " + orderPart.trim()),
+        String order = prepareOrderClause(requestCriteria.getSorts());
+        if (isBlank(order)) {
+            order = isBlank(orderPart) ? "" : " " + orderPart.trim();
+        } else {
+            order = " order by " + order;
+        }
+        return new ParamsQuery(selectPart.trim() + " " + baseQuery + order,
                 "select count(1) " + baseQuery,
                 combineParams(requestCriteria.getFilters(), params));
     }
