@@ -10,22 +10,30 @@ import ru.shark.home.common.dao.common.PageableList;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestSort;
 import ru.shark.home.common.dao.entity.BaseEntity;
+import ru.shark.home.common.dao.repository.query.CriteriaQueryBuilder;
+import ru.shark.home.common.dao.repository.query.ParamsQuery;
+import ru.shark.home.common.dao.service.QueryService;
 import ru.shark.home.common.dao.specification.SpecificationRequest;
 import ru.shark.home.common.dao.util.SpecificationUtils;
 import ru.shark.home.common.enums.SortDirection;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 public class JpaBaseRepository<E extends BaseEntity> extends SimpleJpaRepository<E, Long> implements BaseRepository<E> {
+    private QueryService queryService;
+    private EntityManager em;
 
-
-    public JpaBaseRepository(JpaEntityInformation<E, ?> entityInformation, EntityManager entityManager) {
+    public JpaBaseRepository(JpaEntityInformation<E, ?> entityInformation, EntityManager entityManager, QueryService queryService) {
         super(entityInformation, entityManager);
+        this.queryService = queryService;
+        this.em = entityManager;
     }
 
     @Override
@@ -50,6 +58,32 @@ public class JpaBaseRepository<E extends BaseEntity> extends SimpleJpaRepository
         }
         Page<E> all = findAll(SpecificationUtils.andSpecifications(filterSpec, searchSpecification), pageRequest);
         return new PageableList<>(all.getContent(), all.getTotalElements());
+    }
+
+    @Override
+    public PageableList<E> getWithPagination(String queryName, RequestCriteria requestCriteria,
+                                             Map<String, Object> params,
+                                             List<String> searchFields, String... defaultSort) {
+        CriteriaQueryBuilder criteriaQueryBuilder = queryService.prepareNamedQuery(queryName, searchFields);
+        ParamsQuery query = criteriaQueryBuilder.build(requestCriteria, params);
+        List<E> resultList = applyQueryParams(em.createQuery(query.getQueryString()),
+                query.getParams())
+                .setFirstResult(requestCriteria.getPage())
+                .setMaxResults(requestCriteria.getSize())
+                .getResultList();
+        Long count = (Long) applyQueryParams(em.createQuery(query.getCountQueryString()), query.getParams())
+                .getSingleResult();
+        return new PageableList<>(resultList, count);
+    }
+
+    private Query applyQueryParams(Query query, Map<String, Object> params) {
+        if (isEmpty(params)) {
+            return query;
+        }
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            query.setParameter(entry.getKey(), entry.getValue());
+        }
+        return query;
     }
 
     private Sort getSortFromRequest(List<RequestSort> sortList, String... defaultSort) {
