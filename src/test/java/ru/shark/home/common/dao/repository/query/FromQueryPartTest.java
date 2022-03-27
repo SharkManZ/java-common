@@ -13,7 +13,7 @@ public class FromQueryPartTest {
         FromQueryPart part = new FromQueryPart(fromStr);
 
         // THEN
-        Assertions.assertEquals("SomeEntity", part.getMainTable());
+        Assertions.assertNull(part.getMainTableAlias());
     }
 
     @Test
@@ -25,7 +25,6 @@ public class FromQueryPartTest {
         FromQueryPart part = new FromQueryPart(fromStr);
 
         // THEN
-        Assertions.assertEquals("SomeEntity", part.getMainTable());
         Assertions.assertEquals("s", part.getMainTableAlias());
     }
     @Test
@@ -37,8 +36,6 @@ public class FromQueryPartTest {
         FromQueryPart part = new FromQueryPart(fromStr);
 
         // THEN
-        Assertions.assertEquals("SomeEntity", part.getMainTable());
         Assertions.assertEquals("s", part.getMainTableAlias());
     }
-
 }

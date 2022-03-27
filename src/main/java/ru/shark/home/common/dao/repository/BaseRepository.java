@@ -51,9 +51,8 @@ public interface BaseRepository<E extends BaseEntity> extends PagingAndSortingRe
      * @param requestCriteria параметры выборки
      * @param params          параметры запроса
      * @param searchFields    список названий полей для поиска
-     * @param defaultSort     сортировка по-умолчанию
      * @return пагинированный список
      */
     PageableList<E> getWithPagination(String queryName, RequestCriteria requestCriteria, Map<String, Object> params,
-                                      List<String> searchFields, String... defaultSort);
+                                      List<String> searchFields);
 }

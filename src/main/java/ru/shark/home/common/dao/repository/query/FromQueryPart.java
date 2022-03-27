@@ -5,23 +5,14 @@ package ru.shark.home.common.dao.repository.query;
  */
 public class FromQueryPart {
     private String value;
-    private String mainTable;
     private String mainTableAlias;
 
     public FromQueryPart(String value) {
         this.value = value;
         String[] parts = value.replaceAll("[\\s]{2,}", " ").trim().split(" ");
-        mainTable = parts[1];
         if (parts.length > 2) {
             mainTableAlias = parts[2];
         }
-    }
-
-    /**
-     * Возвращает название главной таблицы запроса.
-     */
-    public String getMainTable() {
-        return mainTable;
     }
 
     /**

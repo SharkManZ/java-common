@@ -2,10 +2,7 @@ package ru.shark.home.common.services;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.repository.query.HqlCriteriaQueryBuilder;
@@ -16,8 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class HqlQueryServiceTest {
@@ -30,6 +26,11 @@ public class HqlQueryServiceTest {
         session = mock(Session.class);
         hqlQueryService = new HqlQueryService();
         hqlQueryService.setEntityManager(session);
+    }
+
+    @BeforeEach
+    public void initMethod() {
+        reset(session);
     }
 
     @Test
@@ -401,7 +402,7 @@ public class HqlQueryServiceTest {
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
         Query namedQuery = mock(Query.class);
         when(namedQuery.getQueryString()).thenReturn(query);
-        when(session.createNamedQuery(eq("query1"))).thenReturn(namedQuery);
+        when(session.getNamedQuery(eq("query1"))).thenReturn(namedQuery);
 
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareNamedQuery("query1");
@@ -430,7 +431,7 @@ public class HqlQueryServiceTest {
         List<String> searchFields = Arrays.asList("name", "description");
         Query namedQuery = mock(Query.class);
         when(namedQuery.getQueryString()).thenReturn(query);
-        when(session.createNamedQuery(eq("query1"))).thenReturn(namedQuery);
+        when(session.getNamedQuery(eq("query1"))).thenReturn(namedQuery);
 
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareNamedQuery("query1", searchFields);

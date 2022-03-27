@@ -17,12 +17,12 @@ public class HqlQueryService implements QueryService {
 
     @Override
     public HqlCriteriaQueryBuilder prepareNamedQuery(String name) {
-        return prepareQuery(((Session) entityManager).createNamedQuery(name).getQueryString(), null);
+        return prepareNamedQuery(name, null);
     }
 
     @Override
     public HqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields) {
-        return prepareQuery(((Session) entityManager).createNamedQuery(name).getQueryString(), searchFields);
+        return prepareQuery(((Session) entityManager).getNamedQuery(name).getQueryString(), searchFields);
     }
 
     public HqlCriteriaQueryBuilder prepareQuery(String query) {

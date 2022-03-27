@@ -63,7 +63,7 @@ public class JpaBaseRepository<E extends BaseEntity> extends SimpleJpaRepository
     @Override
     public PageableList<E> getWithPagination(String queryName, RequestCriteria requestCriteria,
                                              Map<String, Object> params,
-                                             List<String> searchFields, String... defaultSort) {
+                                             List<String> searchFields) {
         CriteriaQueryBuilder criteriaQueryBuilder = queryService.prepareNamedQuery(queryName, searchFields);
         ParamsQuery query = criteriaQueryBuilder.build(requestCriteria, params);
         List<E> resultList = applyQueryParams(em.createQuery(query.getQueryString()),
