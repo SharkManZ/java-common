@@ -102,4 +102,14 @@ public class BaseLogicServiceTest extends BaseServiceTest {
         Assertions.assertNotNull(field);
         Assertions.assertEquals("id", field.getName());
     }
+
+    @Test
+    public void findFieldWithAnnotation() {
+        // WHEN
+        Field field = baseLogicService.findField(LogicTestInnerDto.class, "name");
+
+        // THEN
+        Assertions.assertNotNull(field);
+        Assertions.assertEquals("name", field.getName());
+    }
 }

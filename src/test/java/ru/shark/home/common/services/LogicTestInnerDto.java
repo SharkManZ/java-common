@@ -1,5 +1,8 @@
 package ru.shark.home.common.services;
 
+import ru.shark.home.common.dao.common.EntityClass;
+
+@EntityClass(clazz = LogicTestInnerEntity.class)
 public class LogicTestInnerDto {
     private Long id;
 

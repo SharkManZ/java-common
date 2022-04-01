@@ -1,10 +1,8 @@
 package ru.shark.home.common.services;
 
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
-import ru.shark.home.common.dao.common.RequestCriteria;
-import ru.shark.home.common.dao.common.RequestFilter;
-import ru.shark.home.common.dao.common.RequestSearch;
-import ru.shark.home.common.dao.common.RequestSort;
+import ru.shark.home.common.dao.common.*;
 import ru.shark.home.common.enums.FieldType;
 import ru.shark.home.common.services.dto.PageRequest;
 
@@ -61,11 +59,16 @@ public class BaseLogicService {
         if (clazz == null) {
             return null;
         }
+        Class<?> checkClass = clazz;
+        EntityClass annotation = AnnotationUtils.findAnnotation(clazz, EntityClass.class);
+        if (annotation != null && annotation.clazz() != null) {
+            checkClass = annotation.clazz();
+        }
         Field field = null;
         String[] split = fieldName.split("\\.");
         for (String element : split) {
-            field = ReflectionUtils.findField(clazz, element);
-            clazz = Optional.ofNullable(field).map(Field::getType).orElse(null);
+            field = ReflectionUtils.findField(checkClass, element);
+            checkClass = Optional.ofNullable(field).map(Field::getType).orElse(null);
         }
 
         return field;
