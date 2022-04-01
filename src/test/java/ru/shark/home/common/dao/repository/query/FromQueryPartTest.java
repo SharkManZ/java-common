@@ -38,4 +38,60 @@ public class FromQueryPartTest {
         // THEN
         Assertions.assertEquals("s", part.getMainTableAlias());
     }
+
+    @Test
+    public void transformFieldChain() {
+        // GIVEN
+        String fromStr = " from \n" +
+                " SomeEntity s join s.parent p join s.other o join p.topParent tp ";
+        FromQueryPart queryPart = new FromQueryPart(fromStr);
+
+        // WHEN
+        String fieldChain = queryPart.transformFieldChain("parent.topParent.name");
+
+        // THEN
+        Assertions.assertEquals("tp.name", fieldChain);
+    }
+
+    @Test
+    public void transformFieldChainWithSimpleField() {
+        // GIVEN
+        String fromStr = " from \n" +
+                " SomeEntity s join s.parent p join s.other o join p.topParent tp ";
+        FromQueryPart queryPart = new FromQueryPart(fromStr);
+
+        // WHEN
+        String fieldChain = queryPart.transformFieldChain("name");
+
+        // THEN
+        Assertions.assertEquals("name", fieldChain);
+    }
+
+    @Test
+    public void transformFieldChainWithoutJoining() {
+        // GIVEN
+        String fromStr = " from \n" +
+                " SomeEntity s";
+        FromQueryPart queryPart = new FromQueryPart(fromStr);
+
+        // WHEN
+        String fieldChain = queryPart.transformFieldChain("parent.topParent.name");
+
+        // THEN
+        Assertions.assertEquals("parent.topParent.name", fieldChain);
+    }
+
+    @Test
+    public void transformFieldChainWithPartlyChain() {
+        // GIVEN
+        String fromStr = " from \n" +
+                " SomeEntity s join s.parent p join s.other o";
+        FromQueryPart queryPart = new FromQueryPart(fromStr);
+
+        // WHEN
+        String fieldChain = queryPart.transformFieldChain("parent.topParent.name");
+
+        // THEN
+        Assertions.assertEquals("p.topParent.name", fieldChain);
+    }
 }

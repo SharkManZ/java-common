@@ -69,11 +69,19 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
         if (isEmpty(searchFields) || search == null) {
             return;
         }
-        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
         String searchTemplate = search.isEquals() ? SEARCH_EQ_TPL : SEARCH_LIKE_TPL;
         searchClause = searchFields.stream()
-                .map(field -> MessageFormat.format(searchTemplate, prefix + field, search.getValue()))
+                .map(field -> MessageFormat.format(searchTemplate, transformField(field), search.getValue()))
                 .collect(Collectors.joining(" or "));
+    }
+
+    private String transformField(String field) {
+        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
+        String transformedField = fromPart.transformFieldChain(field);
+        if (!transformedField.equalsIgnoreCase(field)) {
+            return transformedField;
+        }
+        return prefix + field;
     }
 
     private String prepareFilterClause(List<RequestFilter> filters) {
@@ -93,8 +101,7 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     }
 
     private String sortToClause(RequestSort sort) {
-        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
-        return prefix + sort.getField() + (sort.getDirection() == null ? " asc" : " " + sort.getDirection().name().toLowerCase());
+        return transformField(sort.getField()) + (sort.getDirection() == null ? " asc" : " " + sort.getDirection().name().toLowerCase());
     }
 
     private String filterToClause(RequestFilter filter) {
@@ -110,12 +117,11 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     }
 
     private String getEqClause(RequestFilter filter) {
-        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
         switch (filter.getFieldType()) {
             case STRING:
-                return MessageFormat.format(FILTER_STRING_EQ_TPL, prefix + filter.getField(), getFilterName(filter.getField()));
+                return MessageFormat.format(FILTER_STRING_EQ_TPL, transformField(filter.getField()), getFilterName(filter.getField()));
             case INTEGER:
-                return MessageFormat.format(FILTER_NUMBER_EQ_TPL, prefix + filter.getField(), getFilterName(filter.getField()));
+                return MessageFormat.format(FILTER_NUMBER_EQ_TPL, transformField(filter.getField()), getFilterName(filter.getField()));
             default:
                 throw new UnsupportedOperationException("Не поддерживаемый тип поля для операции EQ " +
                         filter.getFieldType().name());
@@ -123,10 +129,9 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     }
 
     private String getLikeClause(RequestFilter filter) {
-        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
         switch (filter.getFieldType()) {
             case STRING:
-                return MessageFormat.format(FILTER_STRING_LIKE_TPL, prefix + filter.getField(), getFilterName(filter.getField()));
+                return MessageFormat.format(FILTER_STRING_LIKE_TPL, transformField(filter.getField()), getFilterName(filter.getField()));
             default:
                 throw new UnsupportedOperationException("Не поддерживаемый тип поля для операции LIKE " +
                         filter.getFieldType().name());
