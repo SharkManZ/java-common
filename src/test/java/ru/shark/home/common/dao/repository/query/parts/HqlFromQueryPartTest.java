@@ -1,16 +1,16 @@
-package ru.shark.home.common.dao.repository.query;
+package ru.shark.home.common.dao.repository.query.parts;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class FromQueryPartTest {
+public class HqlFromQueryPartTest {
     @Test
     public void constructorWithoutAlias() {
         // GIVEN
         String fromStr = " from  \n" +
                 " SomeEntity";
         // WHEN
-        FromQueryPart part = new FromQueryPart(fromStr);
+        HqlFromQueryPart part = new HqlFromQueryPart(fromStr);
 
         // THEN
         Assertions.assertNull(part.getMainTableAlias());
@@ -22,18 +22,19 @@ public class FromQueryPartTest {
         String fromStr = " from  \n" +
                 " SomeEntity s ";
         // WHEN
-        FromQueryPart part = new FromQueryPart(fromStr);
+        HqlFromQueryPart part = new HqlFromQueryPart(fromStr);
 
         // THEN
         Assertions.assertEquals("s", part.getMainTableAlias());
     }
+
     @Test
     public void constructorWithJoins() {
         // GIVEN
         String fromStr = " from  \n" +
                 " SomeEntity s join s.parent p";
         // WHEN
-        FromQueryPart part = new FromQueryPart(fromStr);
+        HqlFromQueryPart part = new HqlFromQueryPart(fromStr);
 
         // THEN
         Assertions.assertEquals("s", part.getMainTableAlias());
@@ -44,7 +45,7 @@ public class FromQueryPartTest {
         // GIVEN
         String fromStr = " from \n" +
                 " SomeEntity s join s.parent p join s.other o join p.topParent tp ";
-        FromQueryPart queryPart = new FromQueryPart(fromStr);
+        HqlFromQueryPart queryPart = new HqlFromQueryPart(fromStr);
 
         // WHEN
         String fieldChain = queryPart.transformFieldChain("parent.topParent.name");
@@ -58,7 +59,7 @@ public class FromQueryPartTest {
         // GIVEN
         String fromStr = " from \n" +
                 " SomeEntity s join s.parent p join s.other o join p.topParent tp ";
-        FromQueryPart queryPart = new FromQueryPart(fromStr);
+        HqlFromQueryPart queryPart = new HqlFromQueryPart(fromStr);
 
         // WHEN
         String fieldChain = queryPart.transformFieldChain("name");
@@ -72,7 +73,7 @@ public class FromQueryPartTest {
         // GIVEN
         String fromStr = " from \n" +
                 " SomeEntity s";
-        FromQueryPart queryPart = new FromQueryPart(fromStr);
+        HqlFromQueryPart queryPart = new HqlFromQueryPart(fromStr);
 
         // WHEN
         String fieldChain = queryPart.transformFieldChain("parent.topParent.name");
@@ -86,7 +87,7 @@ public class FromQueryPartTest {
         // GIVEN
         String fromStr = " from \n" +
                 " SomeEntity s join s.parent p join s.other o";
-        FromQueryPart queryPart = new FromQueryPart(fromStr);
+        HqlFromQueryPart queryPart = new HqlFromQueryPart(fromStr);
 
         // WHEN
         String fieldChain = queryPart.transformFieldChain("parent.topParent.name");

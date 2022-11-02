@@ -1,59 +1,54 @@
 package ru.shark.home.common.dao.service;
 
 import org.hibernate.Session;
-import org.hibernate.hql.internal.ast.ASTQueryTranslatorFactory;
 import org.springframework.stereotype.Component;
-import ru.shark.home.common.dao.repository.query.HqlCriteriaQueryBuilder;
 import ru.shark.home.common.dao.repository.query.QueryParsingState;
 import ru.shark.home.common.dao.repository.query.QueryPartType;
+import ru.shark.home.common.dao.repository.query.SqlCriteriaQueryBuilder;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.List;
 
 @Component
-public class HqlQueryService implements QueryService {
+public class SqlQueryService implements QueryService {
 
     private EntityManager entityManager;
-    private ASTQueryTranslatorFactory queryTranslatorFactory;
 
     @Override
-    public HqlCriteriaQueryBuilder prepareNamedQuery(String name) {
+    public SqlCriteriaQueryBuilder prepareNamedQuery(String name) {
         return prepareNamedQuery(name, null);
     }
 
     @Override
-    public HqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields) {
-        return prepareQuery(((Session) entityManager).getNamedQuery(name).getQueryString(), searchFields);
+    public SqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields) {
+        return prepareQuery(((Session) entityManager).getNamedNativeQuery(name).getQueryString(), searchFields);
     }
 
-    public HqlCriteriaQueryBuilder prepareQuery(String query) {
+    @Override
+    public SqlCriteriaQueryBuilder prepareQuery(String query) {
         return prepareQuery(query, null);
     }
 
-
     @Override
-    public HqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields) {
-        HqlCriteriaQueryBuilder hqlCriteriaQuery = new HqlCriteriaQueryBuilder(entityManager, searchFields);
-        if (queryTranslatorFactory != null) {
-            hqlCriteriaQuery.setQueryTranslatorFactory(queryTranslatorFactory);
-        }
+    public SqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields) {
+        SqlCriteriaQueryBuilder sqlCriteriaQueryBuilder = new SqlCriteriaQueryBuilder(entityManager, searchFields);
         QueryParsingState state = new QueryParsingState(query);
         while (state.hasNext()) {
             if (state.isPartStarted(QueryPartType.FROM)) {
-                hqlCriteriaQuery.setSelectPart(state.changeCurrentPart(QueryPartType.FROM));
+                sqlCriteriaQueryBuilder.setSelectPart(state.changeCurrentPart(QueryPartType.FROM));
 
             } else if (state.isPartStarted(QueryPartType.WHERE)) {
-                hqlCriteriaQuery.setFromPart(state.changeCurrentPart(QueryPartType.WHERE));
+                sqlCriteriaQueryBuilder.setFromPart(state.changeCurrentPart(QueryPartType.WHERE));
 
             } else if (state.isPartStarted(QueryPartType.GROUP) && state.hasMore() &&
                     state.findNextPartIdx("by") != -1) {
                 QueryPartType lastType = state.getCurrentPartType();
                 String previousPart = state.changeCurrentPart(QueryPartType.GROUP, "by");
                 if (QueryPartType.FROM.equals(lastType)) {
-                    hqlCriteriaQuery.setFromPart(previousPart);
+                    sqlCriteriaQueryBuilder.setFromPart(previousPart);
                 } else {
-                    hqlCriteriaQuery.setWherePart(previousPart);
+                    sqlCriteriaQueryBuilder.setWherePart(previousPart);
                 }
 
             } else if (state.isPartStarted(QueryPartType.ORDER) && state.hasMore() &&
@@ -61,11 +56,11 @@ public class HqlQueryService implements QueryService {
                 QueryPartType lastType = state.getCurrentPartType();
                 String previousPart = state.changeCurrentPart(QueryPartType.ORDER, "by");
                 if (QueryPartType.FROM.equals(lastType)) {
-                    hqlCriteriaQuery.setFromPart(previousPart);
+                    sqlCriteriaQueryBuilder.setFromPart(previousPart);
                 } else if (QueryPartType.WHERE.equals(lastType)) {
-                    hqlCriteriaQuery.setWherePart(previousPart);
+                    sqlCriteriaQueryBuilder.setWherePart(previousPart);
                 } else {
-                    hqlCriteriaQuery.setGroupPart(previousPart);
+                    sqlCriteriaQueryBuilder.setGroupPart(previousPart);
                 }
 
             } else {
@@ -77,28 +72,24 @@ public class HqlQueryService implements QueryService {
         String lastPart = state.getPreviousPart();
         switch (state.getCurrentPartType()) {
             case FROM:
-                hqlCriteriaQuery.setFromPart(lastPart);
+                sqlCriteriaQueryBuilder.setFromPart(lastPart);
                 break;
             case WHERE:
-                hqlCriteriaQuery.setWherePart(lastPart);
+                sqlCriteriaQueryBuilder.setWherePart(lastPart);
                 break;
             case GROUP:
-                hqlCriteriaQuery.setGroupPart(lastPart);
+                sqlCriteriaQueryBuilder.setGroupPart(lastPart);
                 break;
             case ORDER:
-                hqlCriteriaQuery.setOrderPart(lastPart);
+                sqlCriteriaQueryBuilder.setOrderPart(lastPart);
                 break;
         }
 
-        return hqlCriteriaQuery;
+        return sqlCriteriaQueryBuilder;
     }
 
     @PersistenceContext
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
-    }
-
-    protected void setQueryTranslatorFactory(ASTQueryTranslatorFactory queryTranslatorFactory) {
-        this.queryTranslatorFactory = queryTranslatorFactory;
     }
 }

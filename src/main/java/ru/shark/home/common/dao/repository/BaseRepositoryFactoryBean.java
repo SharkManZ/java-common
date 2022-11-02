@@ -4,7 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
-import ru.shark.home.common.dao.service.QueryService;
+import ru.shark.home.common.dao.service.HqlQueryService;
+import ru.shark.home.common.dao.service.SqlQueryService;
 
 import javax.persistence.EntityManager;
 import java.io.Serializable;
@@ -14,7 +15,9 @@ import java.io.Serializable;
  */
 public class BaseRepositoryFactoryBean<T extends JpaRepository<S, ID>, S, ID extends Serializable> extends JpaRepositoryFactoryBean<T, S, ID> {
     @Autowired
-    private QueryService queryService;
+    private HqlQueryService hqlQueryService;
+    @Autowired
+    private SqlQueryService sqlQueryService;
 
     /**
      * Creates a new {@link JpaRepositoryFactoryBean} for the given repository interface.
@@ -27,6 +30,6 @@ public class BaseRepositoryFactoryBean<T extends JpaRepository<S, ID>, S, ID ext
 
     @Override
     protected RepositoryFactorySupport createRepositoryFactory(EntityManager entityManager) {
-        return new BaseJpaRepositoryFactory(entityManager, queryService);
+        return new BaseJpaRepositoryFactory(entityManager, hqlQueryService, sqlQueryService);
     }
 }

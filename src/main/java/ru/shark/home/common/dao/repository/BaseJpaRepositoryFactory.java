@@ -3,7 +3,8 @@ package ru.shark.home.common.dao.repository;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.jpa.repository.support.JpaRepositoryImplementation;
 import org.springframework.data.repository.core.RepositoryInformation;
-import ru.shark.home.common.dao.service.QueryService;
+import ru.shark.home.common.dao.service.HqlQueryService;
+import ru.shark.home.common.dao.service.SqlQueryService;
 
 import javax.persistence.EntityManager;
 
@@ -12,7 +13,8 @@ import javax.persistence.EntityManager;
  * сервис построения запросов.
  */
 public class BaseJpaRepositoryFactory extends JpaRepositoryFactory {
-    private QueryService queryService;
+    private HqlQueryService hqlQueryService;
+    private SqlQueryService sqlQueryService;
     private EntityManager entityManager;
 
     /**
@@ -20,14 +22,16 @@ public class BaseJpaRepositoryFactory extends JpaRepositoryFactory {
      *
      * @param entityManager must not be {@literal null}
      */
-    public BaseJpaRepositoryFactory(EntityManager entityManager, QueryService queryService) {
+    public BaseJpaRepositoryFactory(EntityManager entityManager, HqlQueryService hqlQueryService,
+                                    SqlQueryService sqlQueryService) {
         super(entityManager);
         this.entityManager = entityManager;
-        this.queryService = queryService;
+        this.hqlQueryService = hqlQueryService;
+        this.sqlQueryService = sqlQueryService;
     }
 
     @Override
     protected JpaRepositoryImplementation<?, ?> getTargetRepository(RepositoryInformation information, EntityManager entityManager) {
-        return new JpaBaseRepository(getEntityInformation(information.getDomainType()), entityManager, queryService);
+        return new JpaBaseRepository(getEntityInformation(information.getDomainType()), entityManager, hqlQueryService, sqlQueryService);
     }
 }

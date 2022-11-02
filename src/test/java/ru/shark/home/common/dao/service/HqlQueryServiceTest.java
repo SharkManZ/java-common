@@ -1,19 +1,22 @@
-package ru.shark.home.common.services;
+package ru.shark.home.common.dao.service;
 
 import org.hibernate.Session;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.hql.internal.ast.ASTQueryTranslatorFactory;
 import org.hibernate.query.Query;
 import org.junit.jupiter.api.*;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.repository.query.HqlCriteriaQueryBuilder;
 import ru.shark.home.common.dao.repository.query.ParamsQuery;
-import ru.shark.home.common.dao.service.HqlQueryService;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static ru.shark.home.common.QueryUtils.prepareTranslatorFactory;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class HqlQueryServiceTest {
@@ -31,6 +34,10 @@ public class HqlQueryServiceTest {
     @BeforeEach
     public void initMethod() {
         reset(session);
+        SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+        SessionFactoryImplementor sessionFactoryImplementor = mock(SessionFactoryImplementor.class);
+        when(sessionImplementor.getFactory()).thenReturn(sessionFactoryImplementor);
+        when(session.unwrap(eq(SessionImplementor.class))).thenReturn(sessionImplementor);
     }
 
     @Test
@@ -38,7 +45,7 @@ public class HqlQueryServiceTest {
         // GIVEN
         String query = "select  s.id, s.name, s.name || '  ' || s.description as fullName \n" +
                 " from SetEntity s";
-        String expected = "select  s.id, s.name, s.name || '  ' || s.description as fullName from SetEntity s";
+        String expected = "select s.id, s.name, s.name || '  ' || s.description as fullName from SetEntity s";
         String expectedCount = "select count(1) from SetEntity s";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
 
@@ -58,7 +65,7 @@ public class HqlQueryServiceTest {
         String query = "select  s.id, s.name \n" +
                 " from SetEntity s \n" +
                 " where lower(s.name) like '%' || lower(:name) || '%'";
-        String expected = "select  s.id, s.name from SetEntity s where lower(s.name) like '%' || lower(:name) || '%'";
+        String expected = "select s.id, s.name from SetEntity s where lower(s.name) like '%' || lower(:name) || '%'";
         String expectedCount = "select count(1) from SetEntity s where lower(s.name) like '%' || lower(:name) || '%'";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
 
@@ -79,7 +86,7 @@ public class HqlQueryServiceTest {
                 " from SetEntity s join s.series se \n" +
                 " order  by s.id desc";
         String expected = "select s.id as id, s.name as name from SetEntity s join s.series se " +
-                "order  by s.id desc";
+                "order by s.id desc";
         String expectedCount = "select count(1) from SetEntity s join s.series se";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
 
@@ -102,7 +109,7 @@ public class HqlQueryServiceTest {
                 " order  by s.id desc";
         String expected = "select s.id as id, s.name as name from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                "order  by s.id desc";
+                "order by s.id desc";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%'";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
@@ -124,10 +131,11 @@ public class HqlQueryServiceTest {
                 " from SetEntity s join s.series se \n" +
                 " group  by s.id";
         String expected = "select s.id as id, s.name as name from SetEntity s join s.series se " +
-                "group  by s.id";
-        String expectedCount = "select count(1) from SetEntity s join s.series se " +
-                "group  by s.id";
+                "group by s.id";
+        String expectedCount = "select count(1) from (select s.* from table1 s where s.ud > 10 group by s.name) q";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        ASTQueryTranslatorFactory factory = prepareTranslatorFactory("select s.* from table1 s where s.ud > 10 group by s.name");
+        hqlQueryService.setQueryTranslatorFactory(factory);
 
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query);
@@ -137,7 +145,6 @@ public class HqlQueryServiceTest {
         ParamsQuery paramsQuery = result.build(requestCriteria);
         Assertions.assertEquals(expected, paramsQuery.getQueryString());
         Assertions.assertEquals(expectedCount, paramsQuery.getCountQueryString());
-
     }
 
     @Test
@@ -149,11 +156,11 @@ public class HqlQueryServiceTest {
                 " group  by s.id";
         String expected = "select s.id as id, s.name as name from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                "group  by s.id";
-        String expectedCount = "select count(1) from SetEntity s join s.series se " +
-                "where lower(s.name) like '%' || lower(:name) || '%' " +
-                "group  by s.id";
+                "group by s.id";
+        String expectedCount = "select count(1) from (select s.* from table1 s where s.ud > 10 group by s.name) q";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        ASTQueryTranslatorFactory factory = prepareTranslatorFactory("select s.* from table1 s where s.ud > 10 group by s.name");
+        hqlQueryService.setQueryTranslatorFactory(factory);
 
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query);
@@ -175,12 +182,12 @@ public class HqlQueryServiceTest {
                 "order by s.id desc";
         String expected = "select s.id as id, s.name as name from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                "group  by s.id having count(1) > 2 " +
+                "group by s.id having count(1) > 2 " +
                 "order by s.id desc";
-        String expectedCount = "select count(1) from SetEntity s join s.series se " +
-                "where lower(s.name) like '%' || lower(:name) || '%' " +
-                "group  by s.id having count(1) > 2";
+        String expectedCount = "select count(1) from (select s.* from table1 s where s.ud > 10 group by s.name) q";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        ASTQueryTranslatorFactory factory = prepareTranslatorFactory("select s.* from table1 s where s.ud > 10 group by s.name");
+        hqlQueryService.setQueryTranslatorFactory(factory);
 
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query);
@@ -200,13 +207,13 @@ public class HqlQueryServiceTest {
                 " where lower(s.name) like '%' || lower(:name) || '%' \n" +
                 " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
                 " order  by s.id desc";
-        String expected = "select  new Map(s.id as id, s.name as name) from SetEntity s join s.series se " +
+        String expected = "select new Map(s.id as id, s.name as name) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
-                "order  by s.id desc";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
+                "order by s.id desc";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id)";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id)";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
 
         // WHEN
@@ -228,14 +235,14 @@ public class HqlQueryServiceTest {
                 " where lower(s.name) like '%' || lower(:name) || '%' \n" +
                 " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
                 " order  by s.id desc";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
-                "order  by s.id desc";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
+                "order by s.id desc";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id)";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id)";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
 
         // WHEN
@@ -258,18 +265,16 @@ public class HqlQueryServiceTest {
                 " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
                 " group  by s.id having count(1) > 2 " +
                 " order  by s.id desc";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
-                "group  by s.id having count(1) > 2 " +
-                "order  by s.id desc";
-        String expectedCount = "select count(1) from SetEntity s join s.series se " +
-                "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
-                "group  by s.id having count(1) > 2";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
+                "group by s.id having count(1) > 2 " +
+                "order by s.id desc";
+        String expectedCount = "select count(1) from (select s.* from table1 s where s.ud > 10 group by s.name) q";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
-
+        ASTQueryTranslatorFactory factory = prepareTranslatorFactory("select s.* from table1 s where s.ud > 10 group by s.name");
+        hqlQueryService.setQueryTranslatorFactory(factory);
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query);
 
@@ -286,7 +291,7 @@ public class HqlQueryServiceTest {
         String query = "select  new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
                 " from SetEntity s join s.series se \n";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
                 "where (lower(s.name) = lower('MaX') or lower(s.description) = lower('MaX'))";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
@@ -311,7 +316,7 @@ public class HqlQueryServiceTest {
         String query = "select  new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
                 " from SetEntity s join s.series se \n";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
                 "where (lower(s.name) like '%' || lower('MaX') || '%' or lower(s.description) like '%' || lower('MaX') || '%')";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
@@ -337,7 +342,7 @@ public class HqlQueryServiceTest {
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
                 " from SetEntity s join s.series se \n" +
                 " where s.id > 10";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
                 "where s.id > 10 and (lower(s.name) like '%' || lower('MaX') || '%' or lower(s.description) like '%' || lower('MaX') || '%')";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
@@ -363,7 +368,7 @@ public class HqlQueryServiceTest {
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
                 " from SetEntity\n" +
                 " where id > 10";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity " +
                 "where id > 10 and (lower(name) like '%' || lower('MaX') || '%' or lower(description) like '%' || lower('MaX') || '%')";
         String expectedCount = "select count(1) from SetEntity " +
@@ -391,14 +396,14 @@ public class HqlQueryServiceTest {
                 " where lower(s.name) like '%' || lower(:name) || '%' \n" +
                 " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
                 " order  by s.id desc";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
-                "order  by s.id desc";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id) " +
+                "order by s.id desc";
         String expectedCount = "select count(1) from SetEntity s join s.series se " +
                 "where lower(s.name) like '%' || lower(:name) || '%' " +
-                " and not exists (select 1 from SetEntity s1 where s1.id = s.id)";
+                "and not exists (select 1 from SetEntity s1 where s1.id = s.id)";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
         Query namedQuery = mock(Query.class);
         when(namedQuery.getQueryString()).thenReturn(query);
@@ -421,7 +426,7 @@ public class HqlQueryServiceTest {
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
                 " from SetEntity\n" +
                 " where id > 10";
-        String expected = "select  new Map(s.id as id, s.name as name, " +
+        String expected = "select new Map(s.id as id, s.name as name, " +
                 "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity " +
                 "where id > 10 and (lower(name) like '%' || lower('MaX') || '%' or lower(description) like '%' || lower('MaX') || '%')";
         String expectedCount = "select count(1) from SetEntity " +

@@ -1,21 +1,46 @@
 package ru.shark.home.common.dao.repository.query;
 
+import org.hibernate.engine.query.spi.EntityGraphQueryHint;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.hql.internal.ast.ASTQueryTranslatorFactory;
+import org.hibernate.hql.spi.QueryTranslator;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestFilter;
 import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.common.RequestSort;
 import ru.shark.home.common.enums.FieldType;
 
+import javax.persistence.EntityManager;
 import java.util.Arrays;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static ru.shark.home.common.QueryUtils.prepareTranslatorFactory;
+
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class HqlCriteriaQueryBuilderTest {
+    private EntityManager em;
+
+    @BeforeAll
+    public void init() {
+        em = mock(EntityManager.class);
+        SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+        SessionFactoryImplementor sessionFactoryImplementor = mock(SessionFactoryImplementor.class);
+        when(sessionImplementor.getFactory()).thenReturn(sessionFactoryImplementor);
+        when(em.unwrap(eq(SessionImplementor.class))).thenReturn(sessionImplementor);
+    }
 
     @Test
     public void buildWithSelectFrom() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder();
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em);
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         String expected = "select s from Entity s";
@@ -33,7 +58,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhere() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder();
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em);
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setWherePart("where s.id > 10");
@@ -52,13 +77,15 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereGroupBy() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder();
+        ASTQueryTranslatorFactory factory = prepareTranslatorFactory("select s.* from table1 s where s.ud > 10 group by s.name");
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em);
+        query.setQueryTranslatorFactory(factory);
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setWherePart("where s.id > 10");
         query.setGroupPart("group by s.name having count(s.id) > 2");
         String expected = "select s from Entity s where s.id > 10 group by s.name having count(s.id) > 2";
-        String expectedCount = "select count(1) from Entity s where s.id > 10 group by s.name having count(s.id) > 2";
+        String expectedCount = "select count(1) from (select s.* from table1 s where s.ud > 10 group by s.name) q";
 
         // WHEN
         ParamsQuery build = query.build(new RequestCriteria(0, 10));
@@ -72,14 +99,16 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereGroupByOrderBy() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder();
+        ASTQueryTranslatorFactory factory = prepareTranslatorFactory("select s.* from table1 s where s.ud > 10 group by s.name");
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em);
+        query.setQueryTranslatorFactory(factory);
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setWherePart("where s.id > 10");
         query.setGroupPart("group by s.name having count(s.id) > 2");
         query.setOrderPart("order by s.name");
         String expected = "select s from Entity s where s.id > 10 group by s.name having count(s.id) > 2 order by s.name";
-        String expectedCount = "select count(1) from Entity s where s.id > 10 group by s.name having count(s.id) > 2";
+        String expectedCount = "select count(1) from (select s.* from table1 s where s.ud > 10 group by s.name) q";
 
         // WHEN
         ParamsQuery build = query.build(new RequestCriteria(0, 10));
@@ -93,7 +122,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromOrderBy() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder();
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em);
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setOrderPart("order by s.name");
@@ -112,7 +141,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromOrderByAndSearch() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setOrderPart("order by s.name");
@@ -133,9 +162,9 @@ public class HqlCriteriaQueryBuilderTest {
     }
 
     @Test
-    public void buildWithSelectFromAndOrder() {
+    public void buildWithSelectFromAndSort() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em);
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         String expected = "select s from Entity s " +
@@ -159,7 +188,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromAndOrderAndDefaultOrder() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setOrderPart("order by s.id desc");
@@ -184,7 +213,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromAndFilter() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         String expected = "select s from Entity s " +
@@ -211,7 +240,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromAndFilterAndSearchAndOrderTransformed() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("parent.name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("parent.name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s join s.parent p join p.subParent sp");
         String expected = "select s from Entity s join s.parent p join p.subParent sp " +
@@ -247,7 +276,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereAndFilter() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setWherePart("where s.id > 1");
@@ -275,7 +304,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereAndFilterAndSearch() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setWherePart("where s.id > 1");
@@ -308,7 +337,7 @@ public class HqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromOrderByAndSearchLike() {
         // GIVEN
-        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(Arrays.asList("name", "description"));
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, Arrays.asList("name", "description"));
         query.setSelectPart("select s");
         query.setFromPart("from Entity s");
         query.setOrderPart("order by s.name");

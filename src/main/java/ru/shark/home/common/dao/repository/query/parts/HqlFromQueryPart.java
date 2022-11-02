@@ -1,34 +1,30 @@
-package ru.shark.home.common.dao.repository.query;
+package ru.shark.home.common.dao.repository.query.parts;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Описание FROM части запроса. Содержит полный текст части и дополнительную информацию.
  */
-public class FromQueryPart {
-    private String value;
-    private String mainTableAlias;
-    private Map<String, String> tables;
+public class HqlFromQueryPart extends FromQueryPart {
 
-    public FromQueryPart(String value) {
-        this.value = value;
+    private String mainTableAlias;
+
+    public HqlFromQueryPart(String value) {
+        super(value);
         String[] parts = value.replaceAll("[\\s]{2,}", " ").trim().split(" ");
         if (parts.length > 2) {
             mainTableAlias = parts[2];
         }
-        tables = new LinkedHashMap<>();
         int idx = 0;
         while (idx < parts.length) {
             String part = parts[idx];
             if (part.equalsIgnoreCase("from")) {
-                tables.put(parts[idx + 1], parts.length > idx + 2 ? parts[idx + 2] : null);
+                addTableWithAlias(parts[idx + 1], parts.length > idx + 2 ? parts[idx + 2] : null);
             } else if (part.contains(".")) {
                 String[] split = part.split("\\.");
-                tables.put(split[1], parts[idx + 1]);
+                addTableWithAlias(split[1], parts[idx + 1]);
             }
             idx++;
         }
@@ -39,13 +35,6 @@ public class FromQueryPart {
      */
     public String getMainTableAlias() {
         return mainTableAlias;
-    }
-
-    /**
-     * Возвращает полное значение FROM части запроса.
-     */
-    public String getValue() {
-        return value.trim();
     }
 
     public String transformFieldChain(String fieldChain) {
@@ -60,9 +49,9 @@ public class FromQueryPart {
         int lastFoundIdx = 0;
         String lastAlias = null;
         while (idx < split.length) {
-            if (tables.containsKey(split[idx])) {
+            if (hasAliasByTable(split[idx])) {
                 lastFoundIdx = idx;
-                lastAlias = tables.get(split[idx]);
+                lastAlias = getAliasByTable(split[idx]);
             }
             idx++;
         }

@@ -1,8 +1,13 @@
 package ru.shark.home.common.dao.repository.query;
 
+import ru.shark.home.common.dao.util.ParsingUtils;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static ru.shark.home.common.dao.util.ParsingUtils.processBrackets;
 
 /**
  * Класс содержит состояние обработки текста hql запроса.
@@ -44,7 +49,7 @@ public class QueryParsingState {
         currentIdx = 0;
         lastCopyIdx = 0;
         bracketLevel = 0;
-        parts = source.replaceAll("\\n", "").split(" ");
+        parts = getParts(source);
         currentPartType = QueryPartType.SELECT;
     }
 
@@ -83,12 +88,6 @@ public class QueryParsingState {
         return parts[currentIdx];
     }
 
-    /**
-     * Содержит ли текущая часть запроса скобки.
-     */
-    public boolean isBracket() {
-        return getPart().contains("(") || getPart().contains(")");
-    }
 
     /**
      * Возвращает тип текущей части запроса.
@@ -170,12 +169,26 @@ public class QueryParsingState {
      * Обработка скобок содержащихся в текущей части.
      */
     public void processBracket() {
-        for (char let : getPart().toCharArray()) {
-            if ('(' == let) {
-                bracketLevel++;
-            } else if (')' == let) {
-                bracketLevel--;
-            }
+        if (getPart().contains("(") || getPart().contains(")")) {
+            bracketLevel = processBrackets(bracketLevel, getPart());
         }
+    }
+
+    private String[] getParts(String source) {
+        String[] parts = source.replaceAll("\\n", "").split(" ");
+        boolean isQuotaOpened = false;
+        int idx = 0;
+        List<String> partList = new ArrayList<>();
+        while (idx < parts.length) {
+            String part = parts[idx];
+            isQuotaOpened = ParsingUtils.processQuotas(isQuotaOpened, part);
+            if (!isQuotaOpened && isBlank(part)) {
+                idx++;
+                continue;
+            }
+            partList.add(part.trim());
+            idx++;
+        }
+        return partList.stream().toArray(String[]::new);
     }
 }

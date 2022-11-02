@@ -1,14 +1,11 @@
 package ru.shark.home.common.dao.repository.query;
 
 import org.apache.commons.text.CaseUtils;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.hql.internal.ast.ASTQueryTranslatorFactory;
-import org.hibernate.hql.spi.QueryTranslator;
 import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestFilter;
 import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.common.RequestSort;
-import ru.shark.home.common.dao.repository.query.parts.HqlFromQueryPart;
+import ru.shark.home.common.dao.repository.query.parts.SqlFromQueryPart;
 
 import javax.persistence.EntityManager;
 import java.text.MessageFormat;
@@ -24,28 +21,27 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 /**
  * Имплементация дополненного критериями выборки запроса для Hql запросов.
  */
-public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
+public class SqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     private static final String SEARCH_EQ_TPL = "lower({0}) = lower(''{1}'')";
     private static final String SEARCH_LIKE_TPL = "lower({0}) like ''%'' || lower(''{1}'') || ''%''";
     private static final String FILTER_STRING_EQ_TPL = "lower({0}) = lower(:{1})";
     private static final String FILTER_NUMBER_EQ_TPL = "{0} = :{1}";
     private static final String FILTER_STRING_LIKE_TPL = "lower({0}) like ''%'' || lower(:{1}) || ''%''";
     private EntityManager em;
-    private ASTQueryTranslatorFactory queryTranslatorFactory;
 
     private String selectPart;
-    private HqlFromQueryPart fromPart;
+    private SqlFromQueryPart fromPart;
     private String wherePart;
     private String groupPart;
     private String orderPart;
     private String searchClause;
     private List<String> searchFields;
 
-    public HqlCriteriaQueryBuilder(EntityManager em) {
+    public SqlCriteriaQueryBuilder(EntityManager em) {
         this.em = em;
     }
 
-    public HqlCriteriaQueryBuilder(EntityManager em, List<String> searchFields) {
+    public SqlCriteriaQueryBuilder(EntityManager em, List<String> searchFields) {
         this.em = em;
         this.searchFields = searchFields;
     }
@@ -55,7 +51,7 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     }
 
     public void setFromPart(String fromPart) {
-        this.fromPart = new HqlFromQueryPart(fromPart);
+        this.fromPart = new SqlFromQueryPart(fromPart);
     }
 
     public void setWherePart(String wherePart) {
@@ -84,12 +80,11 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     }
 
     private String transformField(String field) {
-        String prefix = isBlank(fromPart.getMainTableAlias()) ? "" : fromPart.getMainTableAlias() + ".";
-        String transformedField = fromPart.transformFieldChain(field);
+        String transformedField = field;
         if (!transformedField.equalsIgnoreCase(field)) {
             return transformedField;
         }
-        return prefix + field;
+        return field;
     }
 
     private String prepareFilterClause(List<RequestFilter> filters) {
@@ -191,9 +186,10 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
         } else {
             order = " order by " + order;
         }
-        boolean isCountNative = !isBlank(groupPart);
+
         return new ParamsQuery(selectPart.trim() + " " + baseQuery + order,
-                getCountString(isCountNative, selectPart, baseQuery), isCountNative,
+                isBlank(groupPart) ? ("select count(1) " + baseQuery) :
+                        "select count(1) from (" + selectPart.trim() + " " + baseQuery + ") q", true,
                 combineParams(requestCriteria.getFilters(), params));
     }
 
@@ -220,23 +216,5 @@ public class HqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
         }
         sb.append(isBlank(groupPart) ? "" : " " + groupPart.trim());
         return sb.toString();
-    }
-
-    private String getCountString(boolean isCountNative, String selectPart, String baseQuery) {
-        if (isCountNative) {
-            SessionImplementor hibernateSession = em.unwrap(SessionImplementor.class);
-            QueryTranslator queryTranslator = queryTranslatorFactory.createQueryTranslator("",
-                    selectPart.trim() + " " + baseQuery, Collections.EMPTY_MAP, hibernateSession.getFactory(),
-                    null);
-            queryTranslator.compile(Collections.EMPTY_MAP, false);
-            return "select count(1) from (" + queryTranslator.getSQLString() + ") q";
-        }
-        return "select count(1) " + baseQuery;
-    }
-
-    // FIXME добавлено исключительно для тестов, добавить в этот модуль контекст в тесты или же выпилить
-    //  при переиспользолвании вне данного модуля
-    public void setQueryTranslatorFactory(ASTQueryTranslatorFactory queryTranslatorFactory) {
-        this.queryTranslatorFactory = queryTranslatorFactory;
     }
 }
