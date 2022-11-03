@@ -76,7 +76,7 @@ public class JpaBaseRepository<E extends BaseEntity> extends SimpleJpaRepository
         ParamsQuery query = criteriaQueryBuilder.build(requestCriteria, params);
         List<E> resultList = applyQueryParams(em.createQuery(query.getQueryString()),
                 query.getParams())
-                .setFirstResult(requestCriteria.getPage())
+                .setFirstResult(requestCriteria.getPage() * requestCriteria.getSize())
                 .setMaxResults(requestCriteria.getSize())
                 .getResultList();
         Query countQuery;
@@ -97,7 +97,7 @@ public class JpaBaseRepository<E extends BaseEntity> extends SimpleJpaRepository
         ParamsQuery query = criteriaQueryBuilder.build(requestCriteria, params);
         List<T> resultList = applyQueryParams(em.createNativeQuery(query.getQueryString(), resultSetMappingName),
                 query.getParams())
-                .setFirstResult(requestCriteria.getPage())
+                .setFirstResult(requestCriteria.getPage() * requestCriteria.getSize())
                 .setMaxResults(requestCriteria.getSize())
                 .getResultList();
         Long count = ((BigInteger) applyQueryParams(em.createNativeQuery(query.getCountQueryString()), query.getParams())
