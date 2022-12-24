@@ -12,6 +12,7 @@ import ru.shark.home.common.enums.FieldType;
 
 import javax.persistence.EntityManager;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 
@@ -136,6 +137,60 @@ public class SqlCriteriaQueryBuilderTest {
                 "where (lower(s.c_name) = lower('test') or lower(s.c_description) = lower('test')) order by s.c_name";
         String expectedCount = "select count(1) from t_table1 s " +
                 "where (lower(s.c_name) = lower('test') or lower(s.c_description) = lower('test'))";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSearch(new RequestSearch("test", true));
+
+        // WHEN
+        ParamsQuery build = query.build(requestCriteria);
+
+        // THEN
+        Assertions.assertNotNull(build);
+        Assertions.assertEquals(expected, build.getQueryString());
+        Assertions.assertEquals(expectedCount, build.getCountQueryString());
+    }
+
+    @Test
+    public void buildWithSelectFromOrderByAndAdvancedSearch() {
+        // GIVEN
+        List<String> advancedSearchFields = Arrays.asList("exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number {0})");
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, null, advancedSearchFields);
+        query.setSelectPart("select s.c_id as id, s.c_name as name");
+        query.setFromPart("from t_table1 s");
+        query.setOrderPart("order by s.c_name");
+        String expected = "select s.c_id as id, s.c_name as name from t_table1 s " +
+                "where (exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number = lower('test'))) " +
+                "order by s.c_name";
+        String expectedCount = "select count(1) from t_table1 s " +
+                "where (exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number = lower('test')))";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSearch(new RequestSearch("test", true));
+
+        // WHEN
+        ParamsQuery build = query.build(requestCriteria);
+
+        // THEN
+        Assertions.assertNotNull(build);
+        Assertions.assertEquals(expected, build.getQueryString());
+        Assertions.assertEquals(expectedCount, build.getCountQueryString());
+    }
+
+
+    @Test
+    public void buildWithSelectFromOrderByAndSearchAndAdvancedSearch() {
+        // GIVEN
+        List<String> searchFields = Arrays.asList("s.c_name", "s.c_description");
+        List<String> advancedSearchFields = Arrays.asList("exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number {0})");
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, searchFields, advancedSearchFields);
+        query.setSelectPart("select s.c_id as id, s.c_name as name");
+        query.setFromPart("from t_table1 s");
+        query.setOrderPart("order by s.c_name");
+        String expected = "select s.c_id as id, s.c_name as name from t_table1 s " +
+                "where (lower(s.c_name) = lower('test') or lower(s.c_description) = lower('test')" +
+                " or exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number = lower('test'))) " +
+                "order by s.c_name";
+        String expectedCount = "select count(1) from t_table1 s " +
+                "where (lower(s.c_name) = lower('test') or lower(s.c_description) = lower('test')" +
+                " or exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number = lower('test')))";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
         requestCriteria.setSearch(new RequestSearch("test", true));
 

@@ -6,6 +6,8 @@ import ru.shark.home.common.dao.entity.BaseEntity;
 import ru.shark.home.common.dao.service.BaseDao;
 import ru.shark.home.common.dao.util.ConverterUtil;
 
+import java.util.List;
+
 /**
  * Базовый класс для промежуточного слоя между dao и хранением данных.
  */
@@ -46,6 +48,15 @@ public abstract class BaseDataManager<E extends BaseEntity, D extends Dto> {
      */
     public D findById(Long id) {
         return entityToDto(dao.findById(id));
+    }
+
+    /**
+     * Возвращает список сущностей
+     *
+     * @return список сущностей
+     */
+    public List<D> findALl() {
+        return converterUtil.entityListToDtoList(dao.findAll(), dtoClass);
     }
 
     protected D entityToDto(E entity) {

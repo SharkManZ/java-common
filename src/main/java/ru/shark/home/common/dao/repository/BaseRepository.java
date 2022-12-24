@@ -69,6 +69,25 @@ public interface BaseRepository<E extends BaseEntity> extends PagingAndSortingRe
      * @param resultSetMappingName название маппинга результатов запроса
      * @return пагинированный список
      */
-    <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria, Map<String, Object> params, List<String> searchFields,
+    <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria,
+                                                            Map<String, Object> params, List<String> searchFields,
+                                                            String resultSetMappingName);
+
+    /**
+     * Возвращает пагинированный список сущностей по переданными критериям и условию поиска и сортировке по-умолчанию
+     * (если не задана в критериях).
+     * Для выборки используется указанный нативный именованный запрос.
+     *
+     * @param queryName            название именованного запроса
+     * @param requestCriteria      параметры выборки
+     * @param params               параметры запроса
+     * @param searchFields         список названий полей для поиска
+     * @param advancedSearchFields список выражений расширенного поиска
+     * @param resultSetMappingName название маппинга результатов запроса
+     * @return пагинированный список
+     */
+    <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria,
+                                                            Map<String, Object> params, List<String> searchFields,
+                                                            List<String> advancedSearchFields,
                                                             String resultSetMappingName);
 }

@@ -21,12 +21,8 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 /**
  * Имплементация дополненного критериями выборки запроса для Hql запросов.
  */
-public class SqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
-    private static final String SEARCH_EQ_TPL = "lower({0}) = lower(''{1}'')";
-    private static final String SEARCH_LIKE_TPL = "lower({0}) like ''%'' || lower(''{1}'') || ''%''";
-    private static final String FILTER_STRING_EQ_TPL = "lower({0}) = lower(:{1})";
-    private static final String FILTER_NUMBER_EQ_TPL = "{0} = :{1}";
-    private static final String FILTER_STRING_LIKE_TPL = "lower({0}) like ''%'' || lower(:{1}) || ''%''";
+public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements CriteriaQueryBuilder {
+
     private EntityManager em;
 
     private String selectPart;
@@ -36,14 +32,24 @@ public class SqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     private String orderPart;
     private String searchClause;
     private List<String> searchFields;
+    private List<String> advancedSearchFields;
 
     public SqlCriteriaQueryBuilder(EntityManager em) {
         this.em = em;
+        this.searchFields = null;
+        this.advancedSearchFields = null;
     }
 
     public SqlCriteriaQueryBuilder(EntityManager em, List<String> searchFields) {
         this.em = em;
         this.searchFields = searchFields;
+        this.advancedSearchFields = null;
+    }
+
+    public SqlCriteriaQueryBuilder(EntityManager em, List<String> searchFields, List<String> advancedSearchFields) {
+        this.em = em;
+        this.searchFields = searchFields;
+        this.advancedSearchFields = advancedSearchFields;
     }
 
     public void setSelectPart(String selectPart) {
@@ -66,17 +72,30 @@ public class SqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
         this.orderPart = orderPart;
     }
 
-    private void prepareSearchClause(List<String> searchFields, RequestSearch search) {
+    private void prepareSearchClause(RequestSearch search) {
         if (!isBlank(searchClause)) {
             return;
         }
-        if (isEmpty(searchFields) || search == null) {
+        if ((isEmpty(advancedSearchFields) && isEmpty(searchFields)) || search == null) {
             return;
         }
-        String searchTemplate = search.isEquals() ? SEARCH_EQ_TPL : SEARCH_LIKE_TPL;
-        searchClause = searchFields.stream()
-                .map(field -> MessageFormat.format(searchTemplate, transformField(field), search.getValue()))
-                .collect(Collectors.joining(" or "));
+        if (!isEmpty(searchFields)) {
+            String searchTemplate = search.isEquals() ? SIMPLE_SEARCH_LEFT + SEARCH_EQ_TPL : SIMPLE_SEARCH_LEFT + SEARCH_LIKE_TPL;
+            searchClause = searchFields.stream()
+                    .map(field -> MessageFormat.format(searchTemplate, transformField(field), search.getValue()))
+                    .collect(Collectors.joining(" or "));
+        }
+        if (!isEmpty(advancedSearchFields)) {
+            String searchTemplate = (search.isEquals() ? SEARCH_EQ_TPL : SEARCH_LIKE_TPL).replace("1", "0");
+            String advancedSearchClause = advancedSearchFields.stream()
+                    .map(item -> MessageFormat.format(item, MessageFormat.format(searchTemplate, search.getValue())))
+                    .collect(Collectors.joining(" or "));
+            if (isBlank(searchClause)) {
+                searchClause = advancedSearchClause;
+            } else {
+                searchClause += " or " + advancedSearchClause;
+            }
+        }
     }
 
     private String transformField(String field) {
@@ -194,7 +213,7 @@ public class SqlCriteriaQueryBuilder implements CriteriaQueryBuilder {
     }
 
     private String getBaseQuery(RequestCriteria requestCriteria) {
-        prepareSearchClause(searchFields, requestCriteria.getSearch());
+        prepareSearchClause(requestCriteria.getSearch());
         String filterClause = prepareFilterClause(requestCriteria.getFilters());
 
         StringBuilder sb = new StringBuilder()

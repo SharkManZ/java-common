@@ -2,6 +2,7 @@ package ru.shark.home.common.dao.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.shark.home.common.dao.entity.BaseEntity;
+import ru.shark.home.common.dao.util.ConverterUtil;
 import ru.shark.home.common.services.dto.Filter;
 
 import javax.persistence.EntityManager;
@@ -17,6 +18,7 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 @Transactional(Transactional.TxType.REQUIRED)
 public abstract class BaseDao<E extends BaseEntity> {
 
+    private ConverterUtil converterUtil;
     private EntityManager em;
     private final Class<E> entityClass;
 
@@ -31,7 +33,7 @@ public abstract class BaseDao<E extends BaseEntity> {
      * @return сохраненная сущность
      */
     public E save(E entity) {
-        return (E) em.merge(entity);
+        return em.merge(entity);
     }
 
     /**
@@ -61,6 +63,15 @@ public abstract class BaseDao<E extends BaseEntity> {
     }
 
     /**
+     * Возвращает все сущности.
+     *
+     * @return список сущностей
+     */
+    public List<E> findAll() {
+        return em.createQuery("select t from " + entityClass.getSimpleName() + " t").getResultList();
+    }
+
+    /**
      * Возвращает класс сущности.
      */
     public Class<E> getEntityClass() {
@@ -83,8 +94,17 @@ public abstract class BaseDao<E extends BaseEntity> {
                 item.getField().equalsIgnoreCase(field)).findFirst().orElse(null);
     }
 
+    public ConverterUtil getConverterUtil() {
+        return converterUtil;
+    }
+
     @Autowired
     public void setEm(EntityManager em) {
         this.em = em;
+    }
+
+    @Autowired
+    public void setConverterUtil(ConverterUtil converterUtil) {
+        this.converterUtil = converterUtil;
     }
 }

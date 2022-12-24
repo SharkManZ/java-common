@@ -2,6 +2,7 @@ package ru.shark.home.common.dao.service;
 
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
+import ru.shark.home.common.dao.repository.query.CriteriaQueryBuilder;
 import ru.shark.home.common.dao.repository.query.QueryParsingState;
 import ru.shark.home.common.dao.repository.query.QueryPartType;
 import ru.shark.home.common.dao.repository.query.SqlCriteriaQueryBuilder;
@@ -22,7 +23,12 @@ public class SqlQueryService implements QueryService {
 
     @Override
     public SqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields) {
-        return prepareQuery(((Session) entityManager).getNamedNativeQuery(name).getQueryString(), searchFields);
+        return prepareNamedQuery(name, searchFields, null);
+    }
+
+    @Override
+    public SqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields, List<String> advancedSearchFields) {
+        return prepareQuery(((Session) entityManager).getNamedNativeQuery(name).getQueryString(), searchFields, advancedSearchFields);
     }
 
     @Override
@@ -32,7 +38,12 @@ public class SqlQueryService implements QueryService {
 
     @Override
     public SqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields) {
-        SqlCriteriaQueryBuilder sqlCriteriaQueryBuilder = new SqlCriteriaQueryBuilder(entityManager, searchFields);
+        return prepareQuery(query, searchFields, null);
+    }
+
+    @Override
+    public SqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields, List<String> advancedSearchFields) {
+        SqlCriteriaQueryBuilder sqlCriteriaQueryBuilder = new SqlCriteriaQueryBuilder(entityManager, searchFields, advancedSearchFields);
         QueryParsingState state = new QueryParsingState(query);
         while (state.hasNext()) {
             if (state.isPartStarted(QueryPartType.FROM)) {
@@ -50,7 +61,6 @@ public class SqlQueryService implements QueryService {
                 } else {
                     sqlCriteriaQueryBuilder.setWherePart(previousPart);
                 }
-
             } else if (state.isPartStarted(QueryPartType.ORDER) && state.hasMore() &&
                     state.findNextPartIdx("by") != -1) {
                 QueryPartType lastType = state.getCurrentPartType();
@@ -62,7 +72,6 @@ public class SqlQueryService implements QueryService {
                 } else {
                     sqlCriteriaQueryBuilder.setGroupPart(previousPart);
                 }
-
             } else {
                 state.processBracket();
             }

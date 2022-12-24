@@ -3,6 +3,7 @@ package ru.shark.home.common.dao.service;
 import org.hibernate.Session;
 import org.hibernate.hql.internal.ast.ASTQueryTranslatorFactory;
 import org.springframework.stereotype.Component;
+import ru.shark.home.common.dao.repository.query.CriteriaQueryBuilder;
 import ru.shark.home.common.dao.repository.query.HqlCriteriaQueryBuilder;
 import ru.shark.home.common.dao.repository.query.QueryParsingState;
 import ru.shark.home.common.dao.repository.query.QueryPartType;
@@ -24,6 +25,11 @@ public class HqlQueryService implements QueryService {
 
     @Override
     public HqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields) {
+        return prepareNamedQuery(name, searchFields, null);
+    }
+
+    @Override
+    public HqlCriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields, List<String> advancedSearchFields) {
         return prepareQuery(((Session) entityManager).getNamedQuery(name).getQueryString(), searchFields);
     }
 
@@ -34,7 +40,12 @@ public class HqlQueryService implements QueryService {
 
     @Override
     public HqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields) {
-        HqlCriteriaQueryBuilder hqlCriteriaQuery = new HqlCriteriaQueryBuilder(entityManager, searchFields);
+        return prepareQuery(query, searchFields, null);
+    }
+
+    @Override
+    public HqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields, List<String> advancedSearchFields) {
+        HqlCriteriaQueryBuilder hqlCriteriaQuery = new HqlCriteriaQueryBuilder(entityManager, searchFields, advancedSearchFields);
         if (queryTranslatorFactory != null) {
             hqlCriteriaQuery.setQueryTranslatorFactory(queryTranslatorFactory);
         }

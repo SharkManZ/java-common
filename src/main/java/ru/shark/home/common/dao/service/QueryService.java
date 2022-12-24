@@ -1,6 +1,5 @@
 package ru.shark.home.common.dao.service;
 
-import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.repository.query.CriteriaQueryBuilder;
 
 import java.util.List;
@@ -14,7 +13,11 @@ public interface QueryService {
 
     CriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields);
 
+    CriteriaQueryBuilder prepareNamedQuery(String name, List<String> searchFields, List<String> advancedSearchFields);
+
     CriteriaQueryBuilder prepareQuery(String query);
 
     CriteriaQueryBuilder prepareQuery(String query, List<String> searchFields);
+
+    CriteriaQueryBuilder prepareQuery(String query, List<String> searchFields, List<String> advancedSearchFields);
 }

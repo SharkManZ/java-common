@@ -311,6 +311,34 @@ public class HqlQueryServiceTest {
     }
 
     @Test
+    public void prepareQueryWithoutWhereAndWithSearchAndAdvancedSearchEq() {
+        // GIVEN
+        String query = "select  new Map(s.id as id, s.name as name, " +
+                "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
+                " from SetEntity s join s.series se \n";
+        String expected = "select new Map(s.id as id, s.name as name, " +
+                "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
+                "where (lower(s.name) = lower('MaX') or lower(s.description) = lower('MaX')" +
+                " or exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number = lower('MaX')))";
+        String expectedCount = "select count(1) from SetEntity s join s.series se " +
+                "where (lower(s.name) = lower('MaX') or lower(s.description) = lower('MaX')" +
+                " or exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number = lower('MaX')))";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSearch(new RequestSearch("MaX", true));
+        List<String> searchFields = Arrays.asList("name", "description");
+        List<String> advancedSearchFields = Arrays.asList("exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number {0})");
+
+        // WHEN
+        HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query, searchFields, advancedSearchFields);
+
+        // THEN
+        Assertions.assertNotNull(result);
+        ParamsQuery paramsQuery = result.build(requestCriteria);
+        Assertions.assertEquals(expected, paramsQuery.getQueryString());
+        Assertions.assertEquals(expectedCount, paramsQuery.getCountQueryString());
+    }
+
+    @Test
     public void prepareQueryWithoutWhereAndWithSearchLike() {
         // GIVEN
         String query = "select  new Map(s.id as id, s.name as name, " +
@@ -327,6 +355,34 @@ public class HqlQueryServiceTest {
 
         // WHEN
         HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query, searchFields);
+
+        // THEN
+        Assertions.assertNotNull(result);
+        ParamsQuery paramsQuery = result.build(requestCriteria);
+        Assertions.assertEquals(expected, paramsQuery.getQueryString());
+        Assertions.assertEquals(expectedCount, paramsQuery.getCountQueryString());
+    }
+
+    @Test
+    public void prepareQueryWithoutWhereAndWithSearchAndAdvancedSearchLike() {
+        // GIVEN
+        String query = "select  new Map(s.id as id, s.name as name, " +
+                "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) \n" +
+                " from SetEntity s join s.series se \n";
+        String expected = "select new Map(s.id as id, s.name as name, " +
+                "(select sum(d.id) from SomeTable t where t.id != s.id) as summ) from SetEntity s join s.series se " +
+                "where (lower(s.name) like '%' || lower('MaX') || '%' or lower(s.description) like '%' || lower('MaX') || '%'" +
+                " or exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number like '%' || lower('MaX') || '%'))";
+        String expectedCount = "select count(1) from SetEntity s join s.series se " +
+                "where (lower(s.name) like '%' || lower('MaX') || '%' or lower(s.description) like '%' || lower('MaX') || '%'" +
+                " or exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number like '%' || lower('MaX') || '%'))";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSearch(new RequestSearch("MaX", false));
+        List<String> searchFields = Arrays.asList("name", "description");
+        List<String> advancedSearchFields = Arrays.asList("exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number {0})");
+
+        // WHEN
+        HqlCriteriaQueryBuilder result = hqlQueryService.prepareQuery(query, searchFields, advancedSearchFields);
 
         // THEN
         Assertions.assertNotNull(result);

@@ -93,7 +93,12 @@ public class JpaBaseRepository<E extends BaseEntity> extends SimpleJpaRepository
     @Override
     public <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria, Map<String, Object> params, List<String> searchFields,
                                                                    String resultSetMappingName) {
-        CriteriaQueryBuilder criteriaQueryBuilder = sqlQueryService.prepareNamedQuery(queryName, searchFields);
+        return getNativeWithPagination(queryName, requestCriteria, params, searchFields, null, resultSetMappingName);
+    }
+
+    @Override
+    public <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria, Map<String, Object> params, List<String> searchFields, List<String> advancedSearchFields, String resultSetMappingName) {
+        CriteriaQueryBuilder criteriaQueryBuilder = sqlQueryService.prepareNamedQuery(queryName, searchFields, advancedSearchFields);
         ParamsQuery query = criteriaQueryBuilder.build(requestCriteria, params);
         List<T> resultList = applyQueryParams(em.createNativeQuery(query.getQueryString(), resultSetMappingName),
                 query.getParams())

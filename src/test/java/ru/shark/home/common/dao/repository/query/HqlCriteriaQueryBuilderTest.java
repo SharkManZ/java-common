@@ -17,6 +17,7 @@ import ru.shark.home.common.enums.FieldType;
 
 import javax.persistence.EntityManager;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
@@ -149,6 +150,57 @@ public class HqlCriteriaQueryBuilderTest {
                 "where (lower(s.name) = lower('test') or lower(s.description) = lower('test')) order by s.name";
         String expectedCount = "select count(1) from Entity s " +
                 "where (lower(s.name) = lower('test') or lower(s.description) = lower('test'))";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSearch(new RequestSearch("test", true));
+
+        // WHEN
+        ParamsQuery build = query.build(requestCriteria);
+
+        // THEN
+        Assertions.assertNotNull(build);
+        Assertions.assertEquals(expected, build.getQueryString());
+        Assertions.assertEquals(expectedCount, build.getCountQueryString());
+    }
+
+    @Test
+    public void buildWithSelectFromOrderByAndAdvancedSearch() {
+        // GIVEN
+        List<String> advancedSearchFields = Arrays.asList("exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number {0})");
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, null, advancedSearchFields);
+        query.setSelectPart("select s");
+        query.setFromPart("from Entity s");
+        query.setOrderPart("order by s.name");
+        String expected = "select s from Entity s " +
+                "where (exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number = lower('test'))) order by s.name";
+        String expectedCount = "select count(1) from Entity s " +
+                "where (exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number = lower('test')))";
+        RequestCriteria requestCriteria = new RequestCriteria(0, 10);
+        requestCriteria.setSearch(new RequestSearch("test", true));
+
+        // WHEN
+        ParamsQuery build = query.build(requestCriteria);
+
+        // THEN
+        Assertions.assertNotNull(build);
+        Assertions.assertEquals(expected, build.getQueryString());
+        Assertions.assertEquals(expectedCount, build.getCountQueryString());
+    }
+
+    @Test
+    public void buildWithSelectFromOrderByAndSearchAndAdvancedSearch() {
+        // GIVEN
+        List<String> searchFields = Arrays.asList("name", "description");
+        List<String> advancedSearchFields = Arrays.asList("exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number {0})");
+        HqlCriteriaQueryBuilder query = new HqlCriteriaQueryBuilder(em, searchFields, advancedSearchFields);
+        query.setSelectPart("select s");
+        query.setFromPart("from Entity s");
+        query.setOrderPart("order by s.name");
+        String expected = "select s from Entity s " +
+                "where (lower(s.name) = lower('test') or lower(s.description) = lower('test')" +
+                " or exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number = lower('test'))) order by s.name";
+        String expectedCount = "select count(1) from Entity s " +
+                "where (lower(s.name) = lower('test') or lower(s.description) = lower('test')" +
+                " or exists (select 1 from Entity2 t2 where t2.parent.id = s.id and t2.number = lower('test')))";
         RequestCriteria requestCriteria = new RequestCriteria(0, 10);
         requestCriteria.setSearch(new RequestSearch("test", true));
 
