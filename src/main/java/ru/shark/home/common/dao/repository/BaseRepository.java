@@ -6,11 +6,7 @@ import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import ru.shark.home.common.dao.common.PageableList;
 import ru.shark.home.common.dao.common.RequestCriteria;
-import ru.shark.home.common.dao.dto.Dto;
 import ru.shark.home.common.dao.entity.BaseEntity;
-
-import java.util.List;
-import java.util.Map;
 
 @NoRepositoryBean
 public interface BaseRepository<E extends BaseEntity> extends PagingAndSortingRepository<E, Long>, JpaSpecificationExecutor<E> {
@@ -42,52 +38,4 @@ public interface BaseRepository<E extends BaseEntity> extends PagingAndSortingRe
      * @return пагинированный список
      */
     PageableList<E> getWithPagination(RequestCriteria request, Specification searchSpecification, String... defaultSort);
-
-    /**
-     * Возвращает пагинированный список сущностей по переданными критериям и условию поиска и сортировке по-умолчанию
-     * (если не задана в критериях).
-     * Для выборки используется указанный именованный запрос.
-     *
-     * @param queryName       название именованного запроса
-     * @param requestCriteria параметры выборки
-     * @param params          параметры запроса
-     * @param searchFields    список названий полей для поиска
-     * @return пагинированный список
-     */
-    PageableList<E> getWithPagination(String queryName, RequestCriteria requestCriteria, Map<String, Object> params,
-                                      List<String> searchFields);
-
-    /**
-     * Возвращает пагинированный список сущностей по переданными критериям и условию поиска и сортировке по-умолчанию
-     * (если не задана в критериях).
-     * Для выборки используется указанный нативный именованный запрос.
-     *
-     * @param queryName            название именованного запроса
-     * @param requestCriteria      параметры выборки
-     * @param params               параметры запроса
-     * @param searchFields         список названий полей для поиска
-     * @param resultSetMappingName название маппинга результатов запроса
-     * @return пагинированный список
-     */
-    <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria,
-                                                            Map<String, Object> params, List<String> searchFields,
-                                                            String resultSetMappingName);
-
-    /**
-     * Возвращает пагинированный список сущностей по переданными критериям и условию поиска и сортировке по-умолчанию
-     * (если не задана в критериях).
-     * Для выборки используется указанный нативный именованный запрос.
-     *
-     * @param queryName            название именованного запроса
-     * @param requestCriteria      параметры выборки
-     * @param params               параметры запроса
-     * @param searchFields         список названий полей для поиска
-     * @param advancedSearchFields список выражений расширенного поиска
-     * @param resultSetMappingName название маппинга результатов запроса
-     * @return пагинированный список
-     */
-    <T extends Dto> PageableList<T> getNativeWithPagination(String queryName, RequestCriteria requestCriteria,
-                                                            Map<String, Object> params, List<String> searchFields,
-                                                            List<String> advancedSearchFields,
-                                                            String resultSetMappingName);
 }
