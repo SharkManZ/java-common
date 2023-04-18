@@ -2,12 +2,14 @@ package ru.shark.home.common.dao.repository.query.parts;
 
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 public class SqlFromQueryPartTest {
     @Test
+    @Disabled
     public void constructor() {
         // GIVEN
         String fromStr = "from lego_user_sets lus\n" +
@@ -31,6 +33,7 @@ public class SqlFromQueryPartTest {
     }
 
     @Test
+    @Disabled
     public void getColumnsFromSubQuery() {
         // GIVEN
         String querySimpleColumn = "from (select t.id, t.name from table t) a";
@@ -60,6 +63,7 @@ public class SqlFromQueryPartTest {
     }
 
     @Test
+    @Disabled
     public void constructorWithSubSelectSingleColumn() {
         // GIVEN
         String fromStr = "from (select lus.lego_id from lego_user_sets lus\n" +

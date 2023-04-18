@@ -10,29 +10,30 @@ import java.util.Set;
 public class SqlFromQueryPart extends FromQueryPart {
     public SqlFromQueryPart(String value) {
         super(value);
-        String[] parts = value.replaceAll("[\\s]{2,}", " ").trim().split(" ");
-        int idx = 0;
-        int bracketLvl = 0;
-        int subQueryStartIdx = 0;
-        while (idx < parts.length) {
-            String part = parts[idx];
-            bracketLvl = ParsingUtils.processBrackets(bracketLvl, part);
-            if (bracketLvl == 0) {
-                if (part.equalsIgnoreCase("from") && !ParsingUtils.containsBrackets(parts[idx + 1])) {
-                    addTableWithAlias(parts[idx + 1], parts.length > idx + 2 ? parts[idx + 2] : null);
-                } else if (part.equalsIgnoreCase("join") && !parts[idx + 1].contains("(")) {
-                    addTableWithAlias(parts[idx + 1], parts[idx + 2]);
-                } else if (part.contains(")") && subQueryStartIdx != 0 && idx < parts.length + 1) {
-                    addTableAliasWithColumns(parts[idx + 1],
-                            getColumnsFromSubQuery(Arrays.copyOfRange(parts, subQueryStartIdx, idx + 1)));
-                    subQueryStartIdx = 0;
-                }
-            } else if (bracketLvl == 1 && subQueryStartIdx == 0) {
-                subQueryStartIdx = idx;
-            }
-
-            idx++;
-        }
+        // TODO теоретически делалось для работы с колонками из нескольких таблиц. Не нужно если обернуть в подзапрос.
+//        String[] parts = value.replaceAll("[\\s]{2,}", " ").trim().split(" ");
+//        int idx = 0;
+//        int bracketLvl = 0;
+//        int subQueryStartIdx = 0;
+//        while (idx < parts.length) {
+//            String part = parts[idx];
+//            bracketLvl += ParsingUtils.processBrackets(part);
+//            if (bracketLvl == 0) {
+//                if (part.equalsIgnoreCase("from") && !ParsingUtils.containsBrackets(parts[idx + 1])) {
+//                    addTableWithAlias(parts[idx + 1], parts.length > idx + 2 ? parts[idx + 2] : null);
+//                } else if (part.equalsIgnoreCase("join") && !parts[idx + 1].contains("(")) {
+//                    addTableWithAlias(parts[idx + 1], parts[idx + 2]);
+//                } else if (part.contains(")") && subQueryStartIdx != 0 && idx < parts.length + 1) {
+//                    addTableAliasWithColumns(parts[idx + 1],
+//                            getColumnsFromSubQuery(Arrays.copyOfRange(parts, subQueryStartIdx, idx + 1)));
+//                    subQueryStartIdx = 0;
+//                }
+//            } else if (bracketLvl == 1 && subQueryStartIdx == 0) {
+//                subQueryStartIdx = idx;
+//            }
+//
+//            idx++;
+//        }
     }
 
     private Set<String> getColumnsFromSubQuery(String[] parts) {
@@ -45,9 +46,9 @@ public class SqlFromQueryPart extends FromQueryPart {
         Set<String> columns = new HashSet<>();
         while (idx < commaParts.length) {
             String part = commaParts[idx].trim();
-            bracketLvl = ParsingUtils.processBrackets(bracketLvl, part);
+            bracketLvl += ParsingUtils.processBrackets(part);
             if (bracketLvl == 0) {
-                String[] spaceParts = part.trim().split(" ");
+                String[] spaceParts = part.split(" ");
                 // простое поле вида t1.id
                 columns.add(getColumnName(spaceParts[spaceParts.length-1]));
             }
@@ -66,7 +67,7 @@ public class SqlFromQueryPart extends FromQueryPart {
         int bracketLvl = 0;
         while (idx < parts.length) {
             String part = parts[idx];
-            bracketLvl = ParsingUtils.processBrackets(bracketLvl, part);
+            bracketLvl += ParsingUtils.processBrackets(part);
             if (bracketLvl == 0) {
                 if (part.equalsIgnoreCase("from")) {
                     return String.join(" ", Arrays.copyOfRange(parts, 1, idx));

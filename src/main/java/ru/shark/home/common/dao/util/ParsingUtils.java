@@ -1,26 +1,15 @@
 package ru.shark.home.common.dao.util;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class ParsingUtils {
-    public static int processBrackets(int bracketLevel, String source) {
-        int currentLevel = bracketLevel;
-        for (char let : source.toCharArray()) {
-            if ('(' == let) {
-                currentLevel++;
-            } else if (')' == let) {
-                currentLevel--;
-            }
-        }
-        return currentLevel;
+    public static int processBrackets(String source) {
+        return StringUtils.countMatches(source, '(') - StringUtils.countMatches(source, ')');
     }
 
-    public static boolean processQuotas(boolean isQuotaOpened, String source) {
-        boolean localIsQuotaOpened = isQuotaOpened;
-        for (char let : source.toCharArray()) {
-            if ('\'' == let) {
-                localIsQuotaOpened = !localIsQuotaOpened;
-            }
-        }
-        return localIsQuotaOpened;
+    public static boolean isInQuotas(boolean currentIn, String source) {
+        boolean inQuotas = StringUtils.countMatches(source, '\'') % 2 != 0;
+       return (currentIn && !inQuotas) || (!currentIn && inQuotas);
     }
 
     public static boolean containsBrackets(String source) {

@@ -29,7 +29,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFrom() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder();
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         String expected = "select s.c_id as id, s.c_name as name from t_table1 s";
@@ -47,7 +47,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhere() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder();
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setWherePart("where s.c_id > 10");
@@ -66,7 +66,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereGroupBy() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder();
 
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
@@ -88,7 +88,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereGroupByOrderBy() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder();
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setWherePart("where s.c_id > 10");
@@ -110,7 +110,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromOrderBy() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder();
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setOrderPart("order by s.c_name");
@@ -129,7 +129,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromOrderByAndSearch() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, Arrays.asList("s.c_name", "s.c_description"));
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(Arrays.asList("s.c_name", "s.c_description"));
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setOrderPart("order by s.c_name");
@@ -153,7 +153,7 @@ public class SqlCriteriaQueryBuilderTest {
     public void buildWithSelectFromOrderByAndAdvancedSearch() {
         // GIVEN
         List<String> advancedSearchFields = Arrays.asList("exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number {0})");
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, null, advancedSearchFields);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(null, advancedSearchFields);
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setOrderPart("order by s.c_name");
@@ -180,7 +180,7 @@ public class SqlCriteriaQueryBuilderTest {
         // GIVEN
         List<String> searchFields = Arrays.asList("s.c_name", "s.c_description");
         List<String> advancedSearchFields = Arrays.asList("exists (select 1 from t_table2 t2 where t2.c_id = t1.c_some_id and t2.c_number {0})");
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, searchFields, advancedSearchFields);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(searchFields, advancedSearchFields);
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setOrderPart("order by s.c_name");
@@ -206,7 +206,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromAndSort() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em);
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder();
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         String expected = "select s.c_id as id, s.c_name as name from t_table1 s " +
@@ -230,7 +230,7 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromAndOrderAndDefaultOrder() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, Arrays.asList("s.c_name", "s.c_description"));
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(Arrays.asList("s.c_name", "s.c_description"));
         query.setSelectPart("select s.c_id as id, s.c_name as name");
         query.setFromPart("from t_table1 s");
         query.setOrderPart("order by s.c_id desc");
@@ -255,9 +255,9 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromAndFilter() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, Arrays.asList("s.c_name", "s.c_description"));
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(Arrays.asList("s.c_name", "s.c_description"));
         query.setSelectPart("select s.c_id as id, s.c_name as name");
-        query.setFromPart("from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id ");
+        query.setFromPart("from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id");
         String expected = "select s.c_id as id, s.c_name as name from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id " +
                 "where (lower(s.c_name) = lower(:sC_name) and s1.c_id = :s1C_id " +
                 "and lower(s.c_name1) like '%' || lower(:sC_name1) || '%')";
@@ -282,9 +282,9 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromWhereAndFilter() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, Arrays.asList("s.c_name", "s.c_description"));
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(Arrays.asList("s.c_name", "s.c_description"));
         query.setSelectPart("select s.c_id as id, s.c_name as name");
-        query.setFromPart("from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id ");
+        query.setFromPart("from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id");
         query.setWherePart("where s.c_id > 1");
         String expected = "select s.c_id as id, s.c_name as name from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id " +
                 "where s.c_id > 1 and (lower(s.c_name) = lower(:sC_name) and s1.c_id = :s1C_id " +
@@ -310,9 +310,9 @@ public class SqlCriteriaQueryBuilderTest {
     @Test
     public void buildWithSelectFromOrderByAndSearchLike() {
         // GIVEN
-        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(em, Arrays.asList("s.c_name", "s.c_description"));
+        SqlCriteriaQueryBuilder query = new SqlCriteriaQueryBuilder(Arrays.asList("s.c_name", "s.c_description"));
         query.setSelectPart("select s.c_id as id, s.c_name as name");
-        query.setFromPart("from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id ");
+        query.setFromPart("from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id");
         query.setOrderPart("order by s.c_id desc");
         String expected = "select s.c_id as id, s.c_name as name from t_table1 s join t_table2 s1 on s1.c_parent_id = s.c_id " +
                 "where (lower(s.c_name) like '%' || lower('test') || '%' or lower(s.c_description) like '%' || lower('test') || '%') " +

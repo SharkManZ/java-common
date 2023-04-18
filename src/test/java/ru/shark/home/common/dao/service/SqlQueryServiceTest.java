@@ -222,13 +222,13 @@ public class SqlQueryServiceTest {
     @Test
     public void prepareQueryWithSelectSubQuery() {
         // GIVEN
-        String query = "select  s.pre_id as id, s.pre_name as name, " +
+        String query = "select  s.pre_id as id, s.pre_name as name, s.pre_name || '''  a ''' || s.pre_id, "+
                 "(select sum(t.pre_id) from pre_set2 t where t.pre_id != s.pre_id) as summ\n" +
                 " from pre_set s join pre_series se on se.pre_id = s.pre_series_id\n" +
                 " where lower(s.pre_name) like '%' || lower(:name) || '%' \n" +
                 " and not exists (select 1 from pre_set s1 where s1.pre_id = s.pre_id)" +
                 " order  by s.pre_id desc";
-        String expected = "select s.pre_id as id, s.pre_name as name, " +
+        String expected = "select s.pre_id as id, s.pre_name as name, s.pre_name || '''  a ''' || s.pre_id, " +
                 "(select sum(t.pre_id) from pre_set2 t where t.pre_id != s.pre_id) as summ from pre_set s join pre_series se on se.pre_id = s.pre_series_id " +
                 "where lower(s.pre_name) like '%' || lower(:name) || '%' " +
                 "and not exists (select 1 from pre_set s1 where s1.pre_id = s.pre_id) " +

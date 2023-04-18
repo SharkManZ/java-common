@@ -2,8 +2,7 @@ package ru.shark.home.common.dao.service;
 
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
-import ru.shark.home.common.dao.repository.query.CriteriaQueryBuilder;
-import ru.shark.home.common.dao.repository.query.QueryParsingState;
+import ru.shark.home.common.dao.repository.query.QueryParser;
 import ru.shark.home.common.dao.repository.query.QueryPartType;
 import ru.shark.home.common.dao.repository.query.SqlCriteriaQueryBuilder;
 
@@ -43,28 +42,27 @@ public class SqlQueryService implements QueryService {
 
     @Override
     public SqlCriteriaQueryBuilder prepareQuery(String query, List<String> searchFields, List<String> advancedSearchFields) {
-        SqlCriteriaQueryBuilder sqlCriteriaQueryBuilder = new SqlCriteriaQueryBuilder(entityManager, searchFields, advancedSearchFields);
-        QueryParsingState state = new QueryParsingState(query);
+        SqlCriteriaQueryBuilder sqlCriteriaQueryBuilder = new SqlCriteriaQueryBuilder(searchFields, advancedSearchFields);
+        QueryParser state = new QueryParser(query);
         while (state.hasNext()) {
+            state.nextPart();
             if (state.isPartStarted(QueryPartType.FROM)) {
                 sqlCriteriaQueryBuilder.setSelectPart(state.changeCurrentPart(QueryPartType.FROM));
 
             } else if (state.isPartStarted(QueryPartType.WHERE)) {
                 sqlCriteriaQueryBuilder.setFromPart(state.changeCurrentPart(QueryPartType.WHERE));
 
-            } else if (state.isPartStarted(QueryPartType.GROUP) && state.hasMore() &&
-                    state.findNextPartIdx("by") != -1) {
+            } else if (state.isPartStarted(QueryPartType.GROUP)) {
                 QueryPartType lastType = state.getCurrentPartType();
-                String previousPart = state.changeCurrentPart(QueryPartType.GROUP, "by");
+                String previousPart = state.changeCurrentPart(QueryPartType.GROUP);
                 if (QueryPartType.FROM.equals(lastType)) {
                     sqlCriteriaQueryBuilder.setFromPart(previousPart);
                 } else {
                     sqlCriteriaQueryBuilder.setWherePart(previousPart);
                 }
-            } else if (state.isPartStarted(QueryPartType.ORDER) && state.hasMore() &&
-                    state.findNextPartIdx("by") != -1) {
+            } else if (state.isPartStarted(QueryPartType.ORDER)) {
                 QueryPartType lastType = state.getCurrentPartType();
-                String previousPart = state.changeCurrentPart(QueryPartType.ORDER, "by");
+                String previousPart = state.changeCurrentPart(QueryPartType.ORDER);
                 if (QueryPartType.FROM.equals(lastType)) {
                     sqlCriteriaQueryBuilder.setFromPart(previousPart);
                 } else if (QueryPartType.WHERE.equals(lastType)) {
@@ -72,13 +70,10 @@ public class SqlQueryService implements QueryService {
                 } else {
                     sqlCriteriaQueryBuilder.setGroupPart(previousPart);
                 }
-            } else {
-                state.processBracket();
             }
-            state.nextIdx();
         }
 
-        String lastPart = state.getPreviousPart();
+        String lastPart = state.getLastPart();
         switch (state.getCurrentPartType()) {
             case FROM:
                 sqlCriteriaQueryBuilder.setFromPart(lastPart);

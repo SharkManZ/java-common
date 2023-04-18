@@ -5,9 +5,7 @@ import ru.shark.home.common.dao.common.RequestCriteria;
 import ru.shark.home.common.dao.common.RequestFilter;
 import ru.shark.home.common.dao.common.RequestSearch;
 import ru.shark.home.common.dao.common.RequestSort;
-import ru.shark.home.common.dao.repository.query.parts.SqlFromQueryPart;
 
-import javax.persistence.EntityManager;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,10 +21,8 @@ import static org.springframework.util.ObjectUtils.isEmpty;
  */
 public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements CriteriaQueryBuilder {
 
-    private EntityManager em;
-
     private String selectPart;
-    private SqlFromQueryPart fromPart;
+    private String fromPart;
     private String wherePart;
     private String groupPart;
     private String orderPart;
@@ -34,20 +30,17 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
     private List<String> searchFields;
     private List<String> advancedSearchFields;
 
-    public SqlCriteriaQueryBuilder(EntityManager em) {
-        this.em = em;
+    public SqlCriteriaQueryBuilder() {
         this.searchFields = null;
         this.advancedSearchFields = null;
     }
 
-    public SqlCriteriaQueryBuilder(EntityManager em, List<String> searchFields) {
-        this.em = em;
+    public SqlCriteriaQueryBuilder(List<String> searchFields) {
         this.searchFields = searchFields;
         this.advancedSearchFields = null;
     }
 
-    public SqlCriteriaQueryBuilder(EntityManager em, List<String> searchFields, List<String> advancedSearchFields) {
-        this.em = em;
+    public SqlCriteriaQueryBuilder(List<String> searchFields, List<String> advancedSearchFields) {
         this.searchFields = searchFields;
         this.advancedSearchFields = advancedSearchFields;
     }
@@ -57,7 +50,7 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
     }
 
     public void setFromPart(String fromPart) {
-        this.fromPart = new SqlFromQueryPart(fromPart);
+        this.fromPart = fromPart;
     }
 
     public void setWherePart(String wherePart) {
@@ -82,7 +75,7 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
         if (!isEmpty(searchFields)) {
             String searchTemplate = search.isEquals() ? SIMPLE_SEARCH_LEFT + SEARCH_EQ_TPL : SIMPLE_SEARCH_LEFT + SEARCH_LIKE_TPL;
             searchClause = searchFields.stream()
-                    .map(field -> MessageFormat.format(searchTemplate, transformField(field), search.getValue()))
+                    .map(field -> MessageFormat.format(searchTemplate, field, search.getValue()))
                     .collect(Collectors.joining(" or "));
         }
         if (!isEmpty(advancedSearchFields)) {
@@ -96,14 +89,6 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
                 searchClause += " or " + advancedSearchClause;
             }
         }
-    }
-
-    private String transformField(String field) {
-        String transformedField = field;
-        if (!transformedField.equalsIgnoreCase(field)) {
-            return transformedField;
-        }
-        return field;
     }
 
     private String prepareFilterClause(List<RequestFilter> filters) {
@@ -123,7 +108,7 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
     }
 
     private String sortToClause(RequestSort sort) {
-        return transformField(sort.getField()) + (sort.getDirection() == null ? " asc" : " " + sort.getDirection().name().toLowerCase());
+        return sort.getField() + (sort.getDirection() == null ? " asc" : " " + sort.getDirection().name().toLowerCase());
     }
 
     private String filterToClause(RequestFilter filter) {
@@ -141,9 +126,9 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
     private String getEqClause(RequestFilter filter) {
         switch (filter.getFieldType()) {
             case STRING:
-                return MessageFormat.format(FILTER_STRING_EQ_TPL, transformField(filter.getField()), getFilterName(filter.getField()));
+                return MessageFormat.format(FILTER_STRING_EQ_TPL, filter.getField(), getFilterName(filter.getField()));
             case INTEGER:
-                return MessageFormat.format(FILTER_NUMBER_EQ_TPL, transformField(filter.getField()), getFilterName(filter.getField()));
+                return MessageFormat.format(FILTER_NUMBER_EQ_TPL, filter.getField(), getFilterName(filter.getField()));
             default:
                 throw new UnsupportedOperationException("Не поддерживаемый тип поля для операции EQ " +
                         filter.getFieldType().name());
@@ -153,7 +138,7 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
     private String getLikeClause(RequestFilter filter) {
         switch (filter.getFieldType()) {
             case STRING:
-                return MessageFormat.format(FILTER_STRING_LIKE_TPL, transformField(filter.getField()), getFilterName(filter.getField()));
+                return MessageFormat.format(FILTER_STRING_LIKE_TPL, filter.getField(), getFilterName(filter.getField()));
             default:
                 throw new UnsupportedOperationException("Не поддерживаемый тип поля для операции LIKE " +
                         filter.getFieldType().name());
@@ -217,7 +202,7 @@ public class SqlCriteriaQueryBuilder extends BaseCriteriaQueryBuilder implements
         String filterClause = prepareFilterClause(requestCriteria.getFilters());
 
         StringBuilder sb = new StringBuilder()
-                .append(fromPart.getValue())
+                .append(fromPart)
                 .append(isBlank(wherePart) ? "" : " " + wherePart.trim());
         if (searchClause != null || filterClause != null) {
             if (isBlank(wherePart)) {

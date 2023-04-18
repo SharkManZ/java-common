@@ -3,9 +3,8 @@ package ru.shark.home.common.dao.service;
 import org.hibernate.Session;
 import org.hibernate.hql.internal.ast.ASTQueryTranslatorFactory;
 import org.springframework.stereotype.Component;
-import ru.shark.home.common.dao.repository.query.CriteriaQueryBuilder;
 import ru.shark.home.common.dao.repository.query.HqlCriteriaQueryBuilder;
-import ru.shark.home.common.dao.repository.query.QueryParsingState;
+import ru.shark.home.common.dao.repository.query.QueryParser;
 import ru.shark.home.common.dao.repository.query.QueryPartType;
 
 import javax.persistence.EntityManager;
@@ -49,28 +48,27 @@ public class HqlQueryService implements QueryService {
         if (queryTranslatorFactory != null) {
             hqlCriteriaQuery.setQueryTranslatorFactory(queryTranslatorFactory);
         }
-        QueryParsingState state = new QueryParsingState(query);
+        QueryParser state = new QueryParser(query);
         while (state.hasNext()) {
+            state.nextPart();
             if (state.isPartStarted(QueryPartType.FROM)) {
                 hqlCriteriaQuery.setSelectPart(state.changeCurrentPart(QueryPartType.FROM));
 
             } else if (state.isPartStarted(QueryPartType.WHERE)) {
                 hqlCriteriaQuery.setFromPart(state.changeCurrentPart(QueryPartType.WHERE));
 
-            } else if (state.isPartStarted(QueryPartType.GROUP) && state.hasMore() &&
-                    state.findNextPartIdx("by") != -1) {
+            } else if (state.isPartStarted(QueryPartType.GROUP)) {
                 QueryPartType lastType = state.getCurrentPartType();
-                String previousPart = state.changeCurrentPart(QueryPartType.GROUP, "by");
+                String previousPart = state.changeCurrentPart(QueryPartType.GROUP);
                 if (QueryPartType.FROM.equals(lastType)) {
                     hqlCriteriaQuery.setFromPart(previousPart);
                 } else {
                     hqlCriteriaQuery.setWherePart(previousPart);
                 }
 
-            } else if (state.isPartStarted(QueryPartType.ORDER) && state.hasMore() &&
-                    state.findNextPartIdx("by") != -1) {
+            } else if (state.isPartStarted(QueryPartType.ORDER)) {
                 QueryPartType lastType = state.getCurrentPartType();
-                String previousPart = state.changeCurrentPart(QueryPartType.ORDER, "by");
+                String previousPart = state.changeCurrentPart(QueryPartType.ORDER);
                 if (QueryPartType.FROM.equals(lastType)) {
                     hqlCriteriaQuery.setFromPart(previousPart);
                 } else if (QueryPartType.WHERE.equals(lastType)) {
@@ -78,14 +76,10 @@ public class HqlQueryService implements QueryService {
                 } else {
                     hqlCriteriaQuery.setGroupPart(previousPart);
                 }
-
-            } else {
-                state.processBracket();
             }
-            state.nextIdx();
         }
 
-        String lastPart = state.getPreviousPart();
+        String lastPart = state.getLastPart();
         switch (state.getCurrentPartType()) {
             case FROM:
                 hqlCriteriaQuery.setFromPart(lastPart);

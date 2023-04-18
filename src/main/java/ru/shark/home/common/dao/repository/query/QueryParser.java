@@ -10,10 +10,10 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static ru.shark.home.common.dao.util.ParsingUtils.processBrackets;
 
 /**
- * Класс содержит состояние обработки текста hql запроса.
+ * Класс содержит состояние обработки текста запроса.
  * Передаваемый запрос разбивается на части через " " с удалением переносов строк.
  */
-public class QueryParsingState {
+public class QueryParser {
 
     /**
      * Номер текущей части запроса.
@@ -45,8 +45,8 @@ public class QueryParsingState {
      *
      * @param source текст запроса
      */
-    public QueryParsingState(String source) {
-        currentIdx = 0;
+    public QueryParser(String source) {
+        currentIdx = -1;
         lastCopyIdx = 0;
         bracketLevel = 0;
         parts = getParts(source);
@@ -55,9 +55,13 @@ public class QueryParsingState {
 
     /**
      * Переход к следующей части запроса.
+     * Увеличение индекса части и процессинг скобок.
      */
-    public void nextIdx() {
+    public void nextPart() {
         currentIdx++;
+        if (hasNext()) {
+            processBracket();
+        }
     }
 
     /**
@@ -68,17 +72,10 @@ public class QueryParsingState {
     }
 
     /**
-     * Возвращает наличие следующей части.
+     * Возвращает признак следующей части запроса.
      */
     public boolean hasNext() {
-        return currentIdx < parts.length;
-    }
-
-    /**
-     * Возвращает наличие следующей через 1 части.
-     */
-    public boolean hasMore() {
-        return currentIdx + 1 < parts.length;
+        return currentIdx + 1 != parts.length;
     }
 
     /**
@@ -117,6 +114,15 @@ public class QueryParsingState {
     }
 
     /**
+     * Объединяет и возвращает все части запроса с последнего места обработки до последнего элемента.
+     *
+     * @return результат объединения
+     */
+    public String getLastPart() {
+        return String.join(" ", Arrays.copyOfRange(parts, lastCopyIdx, parts.length));
+    }
+
+    /**
      * Изменение текущего типа части запроса.
      * Объединяет и возвращает все части запроса с последнего места обработки по предыдущую часть.
      * Изменяет номер последней обработанной части на текущий, а также изменяет тип текущей части на переданный.
@@ -125,52 +131,18 @@ public class QueryParsingState {
      * @return объединенная предыдущая часть.
      */
     public String changeCurrentPart(QueryPartType type) {
-        return changeCurrentPart(type, null);
-    }
-
-    /**
-     * Изменение текущего типа части запроса и изменение номера текущей части на следующий за переданной частью.
-     * Объединяет и возвращает все части запроса с последнего места обработки по предыдущую часть.
-     * Изменяет номер последней обработанной части на текущий, а также изменяет тип текущей части на переданный.
-     *
-     * @param type     тип который надо сделать текущим
-     * @param nextPart значение части, которую нужно найти после текущей
-     * @return объединенная предыдущая часть.
-     */
-    public String changeCurrentPart(QueryPartType type, String nextPart) {
         String previousPart = getPreviousPart();
         lastCopyIdx = currentIdx;
         currentPartType = type;
-        if (!isBlank(nextPart)) {
-            this.currentIdx = findNextPartIdx(nextPart);
-        }
         return previousPart;
-    }
-
-    /**
-     * Возвращает позицию части с указанным значением, следующую за текущей, если между ними только пробелы.
-     * В противном случае возвращает -1.
-     *
-     * @return номер найденной части.
-     */
-    public int findNextPartIdx(String findPart) {
-        boolean onlySpaces = true;
-        for (int i = currentIdx + 1; i < parts.length; i++) {
-            if (findPart.equalsIgnoreCase(parts[i])) {
-                return onlySpaces ? i : -1;
-            } else if (!isBlank(parts[i])) {
-                onlySpaces = false;
-            }
-        }
-        return -1;
     }
 
     /**
      * Обработка скобок содержащихся в текущей части.
      */
-    public void processBracket() {
+    private void processBracket() {
         if (getPart().contains("(") || getPart().contains(")")) {
-            bracketLevel = processBrackets(bracketLevel, getPart());
+            bracketLevel += processBrackets(getPart());
         }
     }
 
@@ -181,7 +153,7 @@ public class QueryParsingState {
         List<String> partList = new ArrayList<>();
         while (idx < parts.length) {
             String part = parts[idx];
-            isQuotaOpened = ParsingUtils.processQuotas(isQuotaOpened, part);
+            isQuotaOpened = ParsingUtils.isInQuotas(isQuotaOpened, part);
             if (!isQuotaOpened && isBlank(part)) {
                 idx++;
                 continue;
